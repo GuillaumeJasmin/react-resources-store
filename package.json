@@ -8,6 +8,8 @@
     "build": "run-s clean test:* build:*",
     "build:main": "tsc -p tsconfig.json",
     "test:eslint": "npx eslint --ext .tsx --ext .ts src/",
+    "test:jest": "npx jest",
+    "test:jest-watch": "npx jest --watch",
     "clean": "rm -rf build"
   },
   "author": "",
@@ -36,7 +38,13 @@
     "lodash": "^4.17.15",
     "normalizr": "^3.4.1",
     "npm-run-all": "^4.1.5",
+    "reselect": "^4.0.0",
     "typescript": "^3.6.3",
     "uniqid": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.18",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.1.0"
   }
 }

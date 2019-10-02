@@ -3,11 +3,10 @@ import { Unsubscribe } from 'redux';
 import uniqid from 'uniqid';
 import { AxiosPromise, AxiosResponse } from 'axios';
 import filter from 'lodash/filter';
-import mapValues from 'lodash/mapValues';
 import { useMount } from './hooks/useMount';
 import { AxiosReduxContext } from './context';
 import { AxiosRequestConfig, ResourceState } from './types';
-import { KEY, WINDOW_CONFIG_KEY } from './contants';
+import { KEY } from './contants';
 
 const methodsToType = {
   GET: 'READ',
@@ -23,40 +22,7 @@ function getResourceInfos(config: any) {
 }
 
 function getResources(state: any, resourceType: string, selector: any): any {
-  // @ts-ignore
-  const config = window[WINDOW_CONFIG_KEY];
-  return selector(
-    mapValues(state[resourceType].resources, (resource, resourceId) => {
-      const resourceTypeRelations = config[resourceType];
-      return new Proxy(resource, {
-        get: (obj, prop) => {
-          if (resourceTypeRelations[prop]) {
-            const isList = Array.isArray(resourceTypeRelations[prop]);
-            const relationResourceType = isList
-              ? resourceTypeRelations[prop][0]
-              : resourceTypeRelations[prop];
-
-            if (isList) {
-              const foreignKey = resourceTypeRelations[prop][1];
-              return getResources(
-                state,
-                relationResourceType,
-                (resources: ResourceState['resources']) => filter(resources, { [foreignKey]: resourceId }),
-              );
-            }
-
-            return getResources(
-              state,
-              relationResourceType,
-              (resources: ResourceState['resources']) => resources[resourceTypeRelations[prop]],
-            );
-          }
-
-          return obj[prop];
-        },
-      });
-    }),
-  );
+  return selector(state[resourceType].resources);
 }
 
 function resolverAll(config: AxiosRequestConfig) {

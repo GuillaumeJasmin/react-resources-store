@@ -1,18 +1,14 @@
 import { pickBy, mapValues } from 'lodash';
 import { schema, normalize } from 'normalizr';
-import { KEY, WINDOW_CONFIG_KEY } from './contants';
+import { KEY } from './contants';
 import { ResourceState, Action, ReducersConfig, Request } from './types';
 
 const initialState = {
   resources: {},
   requests: {},
-  lists: {},
 };
 
 export function createReducers(config: ReducersConfig) {
-  // @ts-ignore
-  window[WINDOW_CONFIG_KEY] = config;
-
   const allSchemas = mapValues(config, (value, key) => new schema.Entity(key));
 
   Object.entries(config).forEach(([key, schemaConfig]: [string, any]) => {

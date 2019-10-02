@@ -43,12 +43,9 @@ export interface ResourceState<Resource = any> {
   requests: {
     [requestKey: string]: Request;
   };
-  lists: {
-    [listName: string]: string[];
-  };
 }
 
-type StoreState<Resources> = {
+export type StoreState<Resources> = {
   [resourceType in keyof Resources]: ResourceState<Resources[resourceType]>;
 };
 

@@ -59,3 +59,7 @@ export interface ReducersConfig {
     [relationKey: string]: string | [string, string];
   };
 }
+
+export interface IncludedResourceParams {
+  [resourceType: string]: true | IncludedResourceParams
+}

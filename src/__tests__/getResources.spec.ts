@@ -150,4 +150,14 @@ describe('getRequestResources', () => {
     const articles2 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
     expect(articles1 === articles2).toBeFalsy();
   });
+
+  it('should include resource works', () => {
+    const ref = { current: null };
+    const state = getState();
+    const articles1 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1', {
+      comments: true,
+    });
+
+    expect(articles1[1].comments).toHaveLength(2);
+  });
 });

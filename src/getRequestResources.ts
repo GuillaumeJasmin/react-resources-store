@@ -1,25 +1,9 @@
-import { defaultMemoize, createSelectorCreator } from 'reselect';
-import { ReducersConfig, StoreState } from './types';
+import { ReducersConfig, StoreState, IncludedResourceParams } from './types';
 import { getRequestResourcesId } from './getRequestResourcesId';
+import { getResourcesFromIds } from './getResourcesFromIds';
 
 interface Ref {
   current: any
-}
-
-function isEqualish(v1: any, v2: any) {
-  if (v1 === v2) {
-    return true;
-  }
-
-  if (Array.isArray(v1) && Array.isArray(v2)) {
-    if (v1.length !== v2.length) {
-      return false;
-    }
-
-    return v1.every((v, ix) => v2[ix] === v);
-  }
-
-  return false;
 }
 
 export function getRequestResources(
@@ -28,26 +12,15 @@ export function getRequestResources(
   state: StoreState<any>,
   resourceType: string,
   requestKey: string,
+  includedResources?: IncludedResourceParams,
 ) {
-  if (!refSelector.current) {
-    const createEqualishSelector = createSelectorCreator(
-      defaultMemoize,
-      isEqualish,
-    );
-
-    const selectResources = (state: StoreState<any>, resourceType: string, requestKey: string) => {
-      const ids = getRequestResourcesId(state, resourceType, requestKey);
-      const { resources } = state[resourceType];
-      return ids.map((id: any) => resources[id]);
-    };
-
-    // eslint-disable-next-line no-param-reassign
-    refSelector.current = createEqualishSelector(
-      selectResources,
-      (objects) => objects,
-    );
-  }
-
-  const selector = refSelector.current;
-  return selector(state, resourceType, requestKey);
+  const ids = getRequestResourcesId(state, resourceType, requestKey);
+  return getResourcesFromIds(
+    refSelector,
+    config,
+    state,
+    resourceType,
+    ids,
+    includedResources,
+  );
 }

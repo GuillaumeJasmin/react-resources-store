@@ -3,10 +3,18 @@ import { getResourcesFromIds } from '../getResourcesFromIds';
 
 const config: ReducersConfig = {
   articles: {
-    comments: ['comments', 'articleId'],
+    comments: {
+      resourceType: 'comments',
+      relationType: 'hasMany',
+      foreignKey: 'articleId',
+    },
   },
   comments: {
-    article: 'articles',
+    article: {
+      resourceType: 'articles',
+      relationType: 'hasOne',
+      foreignKey: 'articleId',
+    },
   },
 };
 
@@ -32,6 +40,7 @@ function getState(): StoreState<any> {
           requestKey: 'request_1',
           status: 'SUCCEEDED',
           ids: ['article_2', 'article_1'],
+          includedResources: {},
         },
       },
     },

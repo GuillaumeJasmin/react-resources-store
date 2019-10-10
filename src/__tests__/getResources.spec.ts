@@ -3,10 +3,18 @@ import { getRequestResources } from '../getRequestResources';
 
 const config: ReducersConfig = {
   articles: {
-    comments: ['comments', 'articleId'],
+    comments: {
+      resourceType: 'comments',
+      relationType: 'hasMany',
+      foreignKey: 'articleId',
+    },
   },
   comments: {
-    article: 'articles',
+    article: {
+      resourceType: 'articles',
+      relationType: 'hasOne',
+      foreignKey: 'articleId',
+    },
   },
 };
 
@@ -32,6 +40,9 @@ function getState(): StoreState<any> {
           requestKey: 'request_1',
           status: 'SUCCEEDED',
           ids: ['article_2', 'article_1'],
+          includedResources: {
+            comments: true,
+          },
         },
       },
     },
@@ -154,9 +165,7 @@ describe('getRequestResources', () => {
   it('should include resource works', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1', {
-      comments: true,
-    });
+    const articles1 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
 
     expect(articles1[1].comments).toHaveLength(2);
   });

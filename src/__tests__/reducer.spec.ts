@@ -1,32 +1,91 @@
-import { createAxiosReduxHook } from '../createAxiosReduxHook';
+import { createReducers } from '../createReducers';
 import { ResourceState, ReducersConfig } from '../types';
 import { KEY } from '../contants';
+import { getIncludedResourcesSchema } from '../getIncludedResourcesSchema';
 
 const config: ReducersConfig = {
   articles: {
-    comments: ['comments', 'articleId'],
+    comments: {
+      resourceType: 'comments',
+      relationType: 'hasMany',
+      foreignKey: 'articleId',
+    },
+    author: {
+      resourceType: 'users',
+      relationType: 'hasOne',
+      foreignKey: 'authorId',
+    },
   },
   comments: {
-    article: 'articles',
+    article: {
+      resourceType: 'articles',
+      relationType: 'hasOne',
+      foreignKey: 'articleId',
+    },
+    author: {
+      resourceType: 'users',
+      relationType: 'hasOne',
+      foreignKey: 'authorId',
+    },
+  },
+  users: {
+    articles: {
+      resourceType: 'articles',
+      relationType: 'hasMany',
+      foreignKey: 'authorId',
+    },
+    comments: {
+      resourceType: 'comments',
+      relationType: 'hasMany',
+      foreignKey: 'authorId',
+    },
   },
 };
 
-function getArticle() {
+function getArticle(key = '1') {
   return {
-    id: 'article_1',
-    title: 'Title 1',
-    content: 'Content 1',
+    id: `article_${key}`,
+    title: `Title ${key}`,
+    content: `Content ${key}`,
   };
+}
+
+function getPlainData() {
+  return [
+    {
+      id: 'article_1',
+      title: 'Title 1',
+      content: 'Content 1',
+      comments: [
+        {
+          id: 'comment_1',
+          content: 'comment 1',
+          articleId: 'article_1',
+          authorId: 'user_1',
+          author: {
+            id: 'user_1',
+            name: 'user 1',
+          },
+        },
+      ],
+    },
+    {
+      id: 'article_2',
+      title: 'Title 2',
+      content: 'Content 2',
+      comments: [],
+    },
+  ];
 }
 
 describe('createReducer', () => {
   it('should return a function', () => {
-    const reducer = createAxiosReduxHook(config).reducers.articles;
+    const reducer = createReducers(config).articles;
     expect(typeof reducer).toBe('function');
   });
 
   it('should throw if there is no type', () => {
-    const reducer = createAxiosReduxHook(config).reducers.articles;
+    const reducer = createReducers(config).articles;
 
     const action = {
       key: KEY,
@@ -36,7 +95,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer return default Resourcestate', () => {
-    const reducer = createAxiosReduxHook(config).reducers.articles;
+    const reducer = createReducers(config).articles;
 
     const action = {};
 
@@ -48,12 +107,12 @@ describe('createReducer', () => {
     expect(reducer(undefined, action)).toEqual(expectedState);
   });
 
-  it('should reducer handle READ_PENDING type', () => {
-    const reducer = createAxiosReduxHook(config).reducers.articles;
+  it('should reducer handle UPDATE_PENDING type', () => {
+    const reducer = createReducers(config).articles;
 
     const action = {
       key: KEY,
-      type: 'READ_PENDING',
+      type: 'UPDATE_PENDING',
       resourceType: 'articles',
       requestKey: 'requestKey_1',
     };
@@ -65,6 +124,7 @@ describe('createReducer', () => {
           requestKey: 'requestKey_1',
           status: 'PENDING',
           ids: [],
+          includedResources: {},
         },
       },
     };
@@ -72,41 +132,44 @@ describe('createReducer', () => {
     expect(reducer(undefined, action)).toEqual(expectedState);
   });
 
-  it('should reducer handle READ_SUCCEEDED type', () => {
-    const reducer = createAxiosReduxHook(config).reducers.articles;
+  it('should reducer handle UPDATE_SUCCEEDED type with new resources', () => {
+    const reducer = createReducers(config).articles;
 
     const initialState: ResourceState = {
-      resources: {},
+      resources: {
+        article_1: getArticle('1'),
+      },
       requests: {
         requestKey_1: {
           requestKey: 'requestKey_1',
           status: 'PENDING',
           ids: [],
+          includedResources: {},
         },
       },
     };
 
-    const article = getArticle();
-
     const action = {
       key: KEY,
-      type: 'READ_SUCCEEDED',
+      type: 'UPDATE_SUCCEEDED',
       resourceType: 'articles',
       requestKey: 'requestKey_1',
       payload: [
-        article,
+        getArticle('2'),
       ],
     };
 
     const expectedState = {
       resources: {
-        [article.id]: article,
+        article_1: getArticle('1'),
+        article_2: getArticle('2'),
       },
       requests: {
         requestKey_1: {
           requestKey: 'requestKey_1',
           status: 'SUCCEEDED',
-          ids: [article.id],
+          ids: ['article_2'],
+          includedResources: getIncludedResourcesSchema(config, 'articles', action.payload),
         },
       },
     };
@@ -114,34 +177,275 @@ describe('createReducer', () => {
     expect(reducer(initialState, action)).toEqual(expectedState);
   });
 
-  it('should reducer handle READ_FAILED', () => {
-    const reducer = createAxiosReduxHook(config).reducers.articles;
+  it('should reducer handle UPDATE_SUCCEEDED type with existed resources', () => {
+    const reducer = createReducers(config).articles;
 
     const initialState: ResourceState = {
-      resources: {},
+      resources: {
+        article_1: getArticle('1'),
+        article_2: getArticle('2'),
+      },
       requests: {
         requestKey_1: {
           requestKey: 'requestKey_1',
           status: 'PENDING',
           ids: [],
+          includedResources: {},
         },
       },
     };
 
     const action = {
       key: KEY,
-      type: 'READ_FAILED',
+      type: 'UPDATE_SUCCEEDED',
       resourceType: 'articles',
       requestKey: 'requestKey_1',
+      payload: [
+        {
+          id: 'article_2',
+          title: 'new title 2',
+        },
+      ],
     };
 
     const expectedState = {
+      resources: {
+        article_1: getArticle('1'),
+        article_2: {
+          ...getArticle('2'),
+          title: 'new title 2',
+        },
+      },
+      requests: {
+        requestKey_1: {
+          requestKey: 'requestKey_1',
+          status: 'SUCCEEDED',
+          ids: ['article_2'],
+          includedResources: getIncludedResourcesSchema(config, 'articles', action.payload),
+        },
+      },
+    };
+
+    expect(reducer(initialState, action)).toEqual(expectedState);
+  });
+
+  it('should reducer handle UPDATE_SUCCEEDED type with nested resources', () => {
+    const reducers = createReducers(config);
+    const reducerArticles = reducers.articles;
+    const reducerComments = reducers.comments;
+    const reducerUsers = reducers.users;
+
+    const initialState: ResourceState = {
       resources: {},
+      requests: {},
+    };
+
+    const action = {
+      key: KEY,
+      type: 'UPDATE_SUCCEEDED',
+      resourceType: 'articles',
+      requestKey: 'requestKey_1',
+      payload: getPlainData(),
+    };
+
+    const expectedArticlesState = {
+      resources: {
+        article_1: {
+          id: 'article_1',
+          title: 'Title 1',
+          content: 'Content 1',
+          comments: [
+            'comment_1',
+          ],
+        },
+        article_2: {
+          id: 'article_2',
+          title: 'Title 2',
+          content: 'Content 2',
+          comments: [],
+        },
+      },
+      requests: {
+        requestKey_1: {
+          requestKey: 'requestKey_1',
+          status: 'SUCCEEDED',
+          ids: ['article_1', 'article_2'],
+          includedResources: getIncludedResourcesSchema(config, 'articles', action.payload),
+        },
+      },
+    };
+
+    const expectedCommentsState = {
+      resources: {
+        comment_1: {
+          id: 'comment_1',
+          content: 'comment 1',
+          articleId: 'article_1',
+          authorId: 'user_1',
+          author: 'user_1',
+        },
+      },
+      requests: {},
+    };
+
+    const expectedUsersState = {
+      resources: {
+        user_1: {
+          id: 'user_1',
+          name: 'user 1',
+        },
+      },
+      requests: {},
+    };
+
+    expect(reducerArticles(initialState, action)).toEqual(expectedArticlesState);
+    expect(reducerComments(initialState, action)).toEqual(expectedCommentsState);
+    expect(reducerUsers(initialState, action)).toEqual(expectedUsersState);
+  });
+
+  it('should reducer handle UPDATE_FAILED', () => {
+    const reducer = createReducers(config).articles;
+
+    const initialState: ResourceState = {
+      resources: {
+        article_1: getArticle(),
+      },
+      requests: {
+        requestKey_1: {
+          requestKey: 'requestKey_1',
+          status: 'PENDING',
+          ids: [],
+          includedResources: {},
+        },
+      },
+    };
+
+    const action = {
+      key: KEY,
+      type: 'UPDATE_FAILED',
+      resourceType: 'articles',
+      requestKey: 'requestKey_1',
+      playload: ['article_1'],
+    };
+
+    const expectedState = {
+      resources: {
+        article_1: getArticle(),
+      },
       requests: {
         requestKey_1: {
           requestKey: 'requestKey_1',
           status: 'FAILED',
           ids: [],
+          includedResources: {},
+        },
+      },
+    };
+
+    expect(reducer(initialState, action)).toEqual(expectedState);
+  });
+
+  it('should reducer handle DELETE_PENDING type', () => {
+    const reducer = createReducers(config).articles;
+
+    const initialState: ResourceState = {
+      resources: {
+        article_1: getArticle(),
+      },
+      requests: {},
+    };
+
+    const action = {
+      key: KEY,
+      type: 'DELETE_PENDING',
+      requestKey: 'requestKey_1',
+      resourceType: 'articles',
+      payload: ['article_1'],
+    };
+
+    const expectedState: ResourceState = {
+      resources: {
+        article_1: getArticle(),
+      },
+      requests: {
+        requestKey_1: {
+          requestKey: 'requestKey_1',
+          status: 'PENDING',
+          ids: ['article_1'],
+          includedResources: {},
+        },
+      },
+    };
+
+    expect(reducer(initialState, action)).toEqual(expectedState);
+  });
+
+  it('should reducer handle DELETE_SUCCEEDED type', () => {
+    const reducer = createReducers(config).articles;
+
+    const initialState: ResourceState = {
+      resources: {
+        article_1: getArticle('1'),
+        article_2: getArticle('2'),
+      },
+      requests: {},
+    };
+
+    const action = {
+      key: KEY,
+      type: 'DELETE_SUCCEEDED',
+      requestKey: 'requestKey_1',
+      resourceType: 'articles',
+      payload: ['article_1'],
+    };
+
+    const expectedState: ResourceState = {
+      resources: {
+        article_2: getArticle('2'),
+      },
+      requests: {
+        requestKey_1: {
+          requestKey: 'requestKey_1',
+          status: 'SUCCEEDED',
+          ids: ['article_1'],
+          includedResources: {},
+        },
+      },
+    };
+
+    expect(reducer(initialState, action)).toEqual(expectedState);
+  });
+
+  it('should reducer handle DELETE_FAILED type', () => {
+    const reducer = createReducers(config).articles;
+
+    const initialState: ResourceState = {
+      resources: {
+        article_1: getArticle('1'),
+        article_2: getArticle('2'),
+      },
+      requests: {},
+    };
+
+    const action = {
+      key: KEY,
+      type: 'DELETE_FAILED',
+      requestKey: 'requestKey_1',
+      resourceType: 'articles',
+      payload: ['article_1'],
+    };
+
+    const expectedState: ResourceState = {
+      resources: {
+        article_1: getArticle('1'),
+        article_2: getArticle('2'),
+      },
+      requests: {
+        requestKey_1: {
+          requestKey: 'requestKey_1',
+          status: 'FAILED',
+          ids: ['article_1'],
+          includedResources: {},
         },
       },
     };
@@ -150,7 +454,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer skip action if key doesn\'t match', () => {
-    const reducer = createAxiosReduxHook(config).reducers.articles;
+    const reducer = createReducers(config).articles;
 
     const initialState = {
       resources: {},
@@ -158,48 +462,11 @@ describe('createReducer', () => {
     };
 
     const action = {
-      type: 'READ_PENDING',
+      type: 'UPDATE_PENDING',
       resourceType: 'articles',
       requestKey: 'requestKey_1',
     };
 
     expect(reducer(initialState, action)).toEqual(initialState);
   });
-
-  // it('should reducer work with included resources', () => {
-  //   const reducerConfig = {
-  //     included: {
-  //       comments: {
-  //         resourceTypes: 'comments',
-  //         relation: [new schema.Entity('comments')],
-  //       },
-  //     },
-  //   }
-
-  //   const reducer = createReducer('articles', reducerConfig)
-
-  //   const initialState = {
-  //     resources: {},
-  //     requests: {},
-
-  //   }
-
-  //   const article = {
-  //     ...getArticle(),
-  //     comments: [
-  //       getComment(),
-  //     ],
-  //   }
-
-  //   const action = {
-  //     type: 'READ_SUCCEEDED',
-  //     resourceType: 'articles',
-  //     requestKey: 'requestKey_1',
-  //     payload: [
-  //       article,
-  //     ],
-  //   }
-
-  //   expect(reducer(initialState, action)).toEqual(initialState)
-  // })
 });

@@ -2,6 +2,7 @@ import { pickBy, mapValues } from 'lodash';
 import { schema, normalize } from 'normalizr';
 import { KEY } from './contants';
 import { ResourceState, Action, ReducersConfig, Request } from './types';
+import { getIncludedResourcesSchema } from './getIncludedResourcesSchema';
 
 const initialState = {
   resources: {},
@@ -11,20 +12,20 @@ const initialState = {
 export function createReducers(config: ReducersConfig) {
   const allSchemas = mapValues(config, (value, key) => new schema.Entity(key));
 
-  Object.entries(config).forEach(([key, schemaConfig]: [string, any]) => {
+  Object.entries(config).forEach(([key, schemaConfig]) => {
     const schema = allSchemas[key];
     schema.define(
       mapValues(schemaConfig, (relation) => {
-        const isList = Array.isArray(relation);
-        const relationResourceType = isList ? relation[0] : relation;
-        const relationEntity = allSchemas[relationResourceType];
+        const { resourceType, relationType } = relation;
+        const isList = relationType === 'hasMany';
+        const relationEntity = allSchemas[resourceType];
 
         return isList ? [relationEntity] : relationEntity;
       }),
     );
   });
 
-  return mapValues(
+  const reducers = mapValues(
     config,
     (value, resourceType) => (
       state: ResourceState = initialState,
@@ -33,8 +34,6 @@ export function createReducers(config: ReducersConfig) {
       if (action.key !== KEY) return state;
 
       const isMainResourceType = action.resourceType === resourceType;
-
-      // if (action.resourceType !== resourceType) return state
 
       const axiosReduxAction: Action = action;
 
@@ -55,8 +54,6 @@ export function createReducers(config: ReducersConfig) {
       const { requestKey } = action;
 
       switch (axiosReduxAction.type) {
-        case 'READ_PENDING':
-        case 'CREATE_PENDING':
         case 'UPDATE_PENDING': {
           if (!isMainResourceType) return state;
 
@@ -68,6 +65,7 @@ export function createReducers(config: ReducersConfig) {
                 requestKey,
                 status: 'PENDING',
                 ids: [],
+                includedResources: {},
               },
             },
           };
@@ -83,21 +81,22 @@ export function createReducers(config: ReducersConfig) {
               [requestKey]: {
                 requestKey,
                 status: 'PENDING',
-                ids: [action.resourceId],
+                ids: action.payload,
+                includedResources: {},
               },
             },
           };
         }
 
-        case 'READ_SUCCEEDED':
-        case 'CREATE_SUCCEEDED':
         case 'UPDATE_SUCCEEDED': {
           const payloadAsArray = Array.isArray(action.payload)
             ? action.payload
             : [action.payload];
+
           const normalizeData = normalize(payloadAsArray, [
             allSchemas[action.resourceType],
           ]);
+
           const resourcesSlice = normalizeData.entities[resourceType];
 
           if (!resourcesSlice) return state;
@@ -117,6 +116,7 @@ export function createReducers(config: ReducersConfig) {
               requestKey,
               status: 'SUCCEEDED',
               ids: normalizeData.result,
+              includedResources: getIncludedResourcesSchema(config, resourceType, payloadAsArray),
             };
           }
 
@@ -135,7 +135,7 @@ export function createReducers(config: ReducersConfig) {
 
           const formated = pickBy(
             state.resources,
-            (value, index) => index !== action.resourceId,
+            (value, resourceId) => !action.payload.includes(resourceId),
           );
 
           return {
@@ -146,7 +146,25 @@ export function createReducers(config: ReducersConfig) {
               [requestKey]: {
                 requestKey,
                 status: 'SUCCEEDED',
-                ids: [action.resourceId],
+                ids: action.payload,
+                includedResources: {},
+              },
+            },
+          };
+        }
+
+        case 'DELETE_FAILED': {
+          if (!isMainResourceType) return state;
+
+          return {
+            ...state,
+            requests: {
+              ...state.requests,
+              [requestKey]: {
+                requestKey,
+                status: 'FAILED',
+                ids: action.payload,
+                includedResources: {},
               },
             },
           };
@@ -165,6 +183,7 @@ export function createReducers(config: ReducersConfig) {
               requestKey,
               status: 'FAILED',
               ids: [],
+              includedResources: {},
             },
           },
         };
@@ -173,4 +192,6 @@ export function createReducers(config: ReducersConfig) {
       return state;
     },
   );
+
+  return reducers;
 }

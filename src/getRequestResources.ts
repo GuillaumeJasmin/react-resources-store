@@ -1,4 +1,4 @@
-import { ReducersConfig, StoreState, IncludedResourceParams } from './types';
+import { ReducersConfig, StoreState } from './types';
 import { getRequestResourcesId } from './getRequestResourcesId';
 import { getResourcesFromIds } from './getResourcesFromIds';
 
@@ -12,9 +12,10 @@ export function getRequestResources(
   state: StoreState<any>,
   resourceType: string,
   requestKey: string,
-  includedResources?: IncludedResourceParams,
 ) {
   const ids = getRequestResourcesId(state, resourceType, requestKey);
+  const { includedResources } = state[resourceType].requests[requestKey];
+
   return getResourcesFromIds(
     refSelector,
     config,

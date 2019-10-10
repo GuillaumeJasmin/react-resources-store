@@ -5,16 +5,10 @@ import {
 import { Store } from 'redux';
 
 export type ActionType =
-  | 'READ_PENDING'
-  | 'CREATE_PENDING'
   | 'UPDATE_PENDING'
   | 'DELETE_PENDING'
-  | 'READ_SUCCEEDED'
-  | 'CREATE_SUCCEEDED'
   | 'UPDATE_SUCCEEDED'
   | 'DELETE_SUCCEEDED'
-  | 'READ_FAILED'
-  | 'CREATE_FAILED'
   | 'UPDATE_FAILED'
   | 'DELETE_FAILED';
 
@@ -34,6 +28,7 @@ export interface Request {
   status: RequestStatus;
   requestKey: string;
   ids: string[];
+  includedResources: IncludedResourceParams,
 }
 
 export interface ResourceState<Resource = any> {
@@ -52,11 +47,16 @@ export type StoreState<Resources> = {
 export interface AxiosReduxContextValue<Resources = any> {
   store: Store<StoreState<Resources>>;
   api: AxiosInstance;
+  config: ReducersConfig,
 }
 
 export interface ReducersConfig {
   [resourceType: string]: {
-    [relationKey: string]: string | [string, string];
+    [relationKey: string]: {
+      resourceType: string,
+      relationType: 'hasMany' | 'hasOne',
+      foreignKey: string
+    }
   };
 }
 

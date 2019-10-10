@@ -5,11 +5,12 @@
   "main": "build/index.js",
   "typings": "build/index.d.ts",
   "scripts": {
-    "build": "run-s clean test:* build:*",
+    "build": "run-s clean test build:*",
     "build:main": "tsc -p tsconfig.json",
+    "test": "run-s test:*",
     "test:eslint": "npx eslint --ext .tsx --ext .ts src/",
-    "test:jest": "npx jest",
-    "test:jest-watch": "npx jest --watch",
+    "test:jest": "npx jest --verbose",
+    "test:jest:watch": "npx jest --watch",
     "clean": "rm -rf build"
   },
   "author": "",
@@ -20,7 +21,14 @@
     "redux": "^4.0.4"
   },
   "dependencies": {
+    "lodash": "^4.17.15",
+    "normalizr": "^3.4.1",
+    "reselect": "^4.0.0",
+    "uniqid": "^5.0.3"
+  },
+  "devDependencies": {
     "@types/axios": "^0.14.0",
+    "@types/jest": "^24.0.18",
     "@types/lodash": "^4.14.141",
     "@types/react": "^16.9.4",
     "@types/redux": "^3.6.0",
@@ -35,16 +43,9 @@
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-react": "^7.15.1",
     "eslint-plugin-react-hooks": "^2.1.1",
-    "lodash": "^4.17.15",
-    "normalizr": "^3.4.1",
-    "npm-run-all": "^4.1.5",
-    "reselect": "^4.0.0",
-    "typescript": "^3.6.3",
-    "uniqid": "^5.0.3"
-  },
-  "devDependencies": {
-    "@types/jest": "^24.0.18",
     "jest": "^24.9.0",
-    "ts-jest": "^24.1.0"
+    "npm-run-all": "^4.1.5",
+    "ts-jest": "^24.1.0",
+    "typescript": "^3.6.3"
   }
 }

@@ -2,11 +2,13 @@ import { useContext, useState, useMemo, useRef, useCallback } from 'react';
 import { Unsubscribe } from 'redux';
 import uniqid from 'uniqid';
 import { AxiosPromise, AxiosResponse } from 'axios';
-import filter from 'lodash/filter';
 import { useMount } from './hooks/useMount';
 import { AxiosReduxContext } from './context';
-import { AxiosRequestConfig, ResourceState } from './types';
+import { AxiosRequestConfig } from './types';
 import { KEY } from './contants';
+import { getRequestResources } from './getRequestResources';
+import { getResourcesFromIds } from './getResourcesFromIds';
+import { getIncludedResourcesSchema } from './getIncludedResourcesSchema';
 
 const methodsToType = {
   GET: 'READ',
@@ -21,18 +23,6 @@ function getResourceInfos(config: any) {
   return { resourceType, resourceId };
 }
 
-function getResources(state: any, resourceType: string, selector: any): any {
-  return selector(state[resourceType].resources);
-}
-
-function resolverAll(config: AxiosRequestConfig) {
-  return (resources: ResourceState['resources']) => filter(resources, config.params.filter.where);
-}
-
-function resolverOne(resourceId: string) {
-  return (resources: ResourceState['resources']) => resources[resourceId];
-}
-
 function getRequestKey(config: AxiosRequestConfig) {
   const urlStringify = JSON.stringify(config.url);
   const methodStringify = JSON.stringify(config.method);
@@ -41,9 +31,10 @@ function getRequestKey(config: AxiosRequestConfig) {
 }
 
 export function useRequest<Data = any>(config: AxiosRequestConfig): [Data, boolean] {
-  const { store, api } = useContext(AxiosReduxContext);
+  const { store, api, config: reducersConfig } = useContext(AxiosReduxContext);
   const [, setLastUpdate] = useState<number>(0);
   const refConfig = useRef(config);
+  const refSelector = useRef(null);
   const requestKey = useMemo(() => getRequestKey(refConfig.current), []);
   const { resourceType, resourceId } = useMemo(
     () => getResourceInfos(refConfig.current),
@@ -56,10 +47,13 @@ export function useRequest<Data = any>(config: AxiosRequestConfig): [Data, boole
 
   let data = null;
 
+  // @ts-ignore TODO
+  const includedResources: any = getIncludedResourcesSchema(reducersConfig, resourceType);
+
   if (isGet) {
     data = resourceId
-      ? getResources(store.getState(), resourceType, resolverOne(resourceId))
-      : getResources(store.getState(), resourceType, resolverAll(config));
+      ? getRequestResources(refSelector, reducersConfig, store.getState(), resourceType, requestKey)
+      : getResourcesFromIds(refSelector, reducersConfig, store.getState(), resourceType, resourceId, includedResources);
   }
 
   useMount(() => {

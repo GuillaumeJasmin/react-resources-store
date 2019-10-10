@@ -54,6 +54,11 @@ export function getResourcesFromIds(
         if (includedResources) {
           Object.entries(includedResources).forEach(([relationResourceKey, includedResourceValue]) => {
             const relationConfig = config[resourceType][relationResourceKey];
+            const {
+              resourceType: relationResourceType,
+              foreignKey,
+              relationType,
+            } = relationConfig;
 
             const nextIncludesResources: IncludedResourceParams | undefined = includedResourceValue === true
               ? undefined
@@ -76,8 +81,7 @@ export function getResourcesFromIds(
 
             const { selector } = refSelector.current[id][relationResourceKey];
 
-            if (Array.isArray(relationConfig)) {
-              const [relationResourceType, foreignKey] = relationConfig;
+            if (relationType === 'hasMany') {
               const ids = Object.entries(state[relationResourceType].resources)
                 .filter(([, value]) => value[foreignKey] === id)
                 .map(([key]) => key);
@@ -93,8 +97,7 @@ export function getResourcesFromIds(
 
               resource = selector(resource, relations);
             } else {
-              const relationResourceType = relationConfig;
-              const foreignId = resource[`${relationResourceKey}Id`];
+              const foreignId = resource[foreignKey];
 
               const relations = getResourcesFromIds(
                 refSelector.current[id][relationResourceKey],

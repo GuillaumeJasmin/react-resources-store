@@ -7,22 +7,26 @@
 ```js
 import axios from 'axios'
 import { createStore, combineReducers } from 'redux'
-import { createReducers, AxiosReduxProvider, useRequest, useLazyRequest } from 'axios-redux'
+import { createAxiosReduxHook, AxiosReduxProvider, useRequest, useLazyRequest } from 'axios-redux-hook'
 
-const reducers = createReducers({
+const config = createAxiosReduxHook({
   articles: {
-    comments: ['comments', 'articleId']
+    comments: {
+      resourceType: 'comments',
+      relationType: 'hasMany',
+      foreignKey: 'articleId'
+    },
   },
   comments: {
-    article: 'article'
+    article: {
+      resourceType: 'articles',
+      relationType: 'hasOne',
+      foreignKey: 'articleId'
+    }
   }
 })
 
-
-const rootReducer = combineReducers({
-  articles: createReducer('articles'),
-  comments: createReducer('comments')
-})
+const rootReducer = combineReducers(config.reducers)
 
 export const store = createStore(rootReducer)
 
@@ -33,7 +37,8 @@ export const api = axios.create({
 
 const axiosReduxContext = {
   store,
-  api
+  api,
+  config
 }
 
 const App = (

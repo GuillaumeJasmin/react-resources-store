@@ -41,6 +41,7 @@ function getState(): StoreState<any> {
           status: 'SUCCEEDED',
           ids: ['article_2', 'article_1'],
           includedResources: {},
+          isList: true,
         },
       },
     },

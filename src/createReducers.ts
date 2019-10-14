@@ -66,6 +66,7 @@ export function createReducers(config: ReducersConfig) {
                 status: 'PENDING',
                 ids: [],
                 includedResources: {},
+                isList: false,
               },
             },
           };
@@ -81,15 +82,17 @@ export function createReducers(config: ReducersConfig) {
               [requestKey]: {
                 requestKey,
                 status: 'PENDING',
-                ids: action.payload,
+                ids: action.payload || [],
                 includedResources: {},
+                isList: false,
               },
             },
           };
         }
 
         case 'UPDATE_SUCCEEDED': {
-          const payloadAsArray = Array.isArray(action.payload)
+          const isList = Array.isArray(action.payload);
+          const payloadAsArray = isList
             ? action.payload
             : [action.payload];
 
@@ -97,9 +100,9 @@ export function createReducers(config: ReducersConfig) {
             allSchemas[action.resourceType],
           ]);
 
-          const resourcesSlice = normalizeData.entities[resourceType];
+          const resourcesSlice = normalizeData.entities[resourceType] || {};
 
-          if (!resourcesSlice) return state;
+          // if (!resourcesSlice) return state;
 
           const nextResources = {
             ...resourcesSlice,
@@ -117,6 +120,7 @@ export function createReducers(config: ReducersConfig) {
               status: 'SUCCEEDED',
               ids: normalizeData.result,
               includedResources: getIncludedResourcesSchema(config, resourceType, payloadAsArray),
+              isList,
             };
           }
 
@@ -142,12 +146,17 @@ export function createReducers(config: ReducersConfig) {
             ...state,
             resources: formated,
             requests: {
-              ...state.requests,
+              ...mapValues(state.requests, (request) => ({
+                ...request,
+                ids: request.ids.filter((id) => !action.payload.includes(id)),
+              })),
+              // ...state.requests,
               [requestKey]: {
                 requestKey,
                 status: 'SUCCEEDED',
                 ids: action.payload,
                 includedResources: {},
+                isList: false,
               },
             },
           };
@@ -165,6 +174,7 @@ export function createReducers(config: ReducersConfig) {
                 status: 'FAILED',
                 ids: action.payload,
                 includedResources: {},
+                isList: false,
               },
             },
           };
@@ -184,6 +194,7 @@ export function createReducers(config: ReducersConfig) {
               status: 'FAILED',
               ids: [],
               includedResources: {},
+              isList: false,
             },
           },
         };

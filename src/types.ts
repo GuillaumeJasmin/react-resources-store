@@ -29,6 +29,7 @@ export interface Request {
   requestKey: string;
   ids: string[];
   includedResources: IncludedResourceParams,
+  isList: boolean,
 }
 
 export interface ResourceState<Resource = any> {

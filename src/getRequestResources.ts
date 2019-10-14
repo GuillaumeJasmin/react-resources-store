@@ -1,6 +1,6 @@
 import { ReducersConfig, StoreState } from './types';
-import { getRequestResourcesId } from './getRequestResourcesId';
 import { getResourcesFromIds } from './getResourcesFromIds';
+import { getRequest } from './getRequest';
 
 interface Ref {
   current: any
@@ -13,15 +13,24 @@ export function getRequestResources(
   resourceType: string,
   requestKey: string,
 ) {
-  const ids = getRequestResourcesId(state, resourceType, requestKey);
-  const { includedResources } = state[resourceType].requests[requestKey];
+  const request = getRequest(state, resourceType, requestKey);
+
+  if (!request || request.status !== 'SUCCEEDED') {
+    return null;
+  }
+
+  const { includedResources, ids, isList } = request;
+
+  const idsParams = isList
+    ? ids
+    : ids[0];
 
   return getResourcesFromIds(
     refSelector,
     config,
     state,
     resourceType,
-    ids,
+    idsParams,
     includedResources,
   );
 }

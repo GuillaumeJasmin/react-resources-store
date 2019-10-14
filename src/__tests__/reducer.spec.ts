@@ -99,7 +99,7 @@ describe('createReducer', () => {
 
     const action = {};
 
-    const expectedState = {
+    const expectedState: ResourceState = {
       resources: {},
       requests: {},
     };
@@ -125,6 +125,7 @@ describe('createReducer', () => {
           status: 'PENDING',
           ids: [],
           includedResources: {},
+          isList: false,
         },
       },
     };
@@ -145,6 +146,7 @@ describe('createReducer', () => {
           status: 'PENDING',
           ids: [],
           includedResources: {},
+          isList: false,
         },
       },
     };
@@ -159,7 +161,7 @@ describe('createReducer', () => {
       ],
     };
 
-    const expectedState = {
+    const expectedState: ResourceState = {
       resources: {
         article_1: getArticle('1'),
         article_2: getArticle('2'),
@@ -170,6 +172,7 @@ describe('createReducer', () => {
           status: 'SUCCEEDED',
           ids: ['article_2'],
           includedResources: getIncludedResourcesSchema(config, 'articles', action.payload),
+          isList: true,
         },
       },
     };
@@ -191,6 +194,7 @@ describe('createReducer', () => {
           status: 'PENDING',
           ids: [],
           includedResources: {},
+          isList: false,
         },
       },
     };
@@ -208,7 +212,7 @@ describe('createReducer', () => {
       ],
     };
 
-    const expectedState = {
+    const expectedState: ResourceState = {
       resources: {
         article_1: getArticle('1'),
         article_2: {
@@ -222,6 +226,41 @@ describe('createReducer', () => {
           status: 'SUCCEEDED',
           ids: ['article_2'],
           includedResources: getIncludedResourcesSchema(config, 'articles', action.payload),
+          isList: true,
+        },
+      },
+    };
+
+    expect(reducer(initialState, action)).toEqual(expectedState);
+  });
+
+  it('should request.isList be false', () => {
+    const reducer = createReducers(config).articles;
+
+    const initialState: ResourceState = {
+      resources: {},
+      requests: {},
+    };
+
+    const action = {
+      key: KEY,
+      type: 'UPDATE_SUCCEEDED',
+      resourceType: 'articles',
+      requestKey: 'requestKey_1',
+      payload: getArticle(),
+    };
+
+    const expectedState: ResourceState = {
+      resources: {
+        article_1: getArticle(),
+      },
+      requests: {
+        requestKey_1: {
+          requestKey: 'requestKey_1',
+          status: 'SUCCEEDED',
+          ids: ['article_1'],
+          includedResources: {},
+          isList: false,
         },
       },
     };
@@ -248,7 +287,7 @@ describe('createReducer', () => {
       payload: getPlainData(),
     };
 
-    const expectedArticlesState = {
+    const expectedArticlesState: ResourceState = {
       resources: {
         article_1: {
           id: 'article_1',
@@ -271,11 +310,12 @@ describe('createReducer', () => {
           status: 'SUCCEEDED',
           ids: ['article_1', 'article_2'],
           includedResources: getIncludedResourcesSchema(config, 'articles', action.payload),
+          isList: true,
         },
       },
     };
 
-    const expectedCommentsState = {
+    const expectedCommentsState: ResourceState = {
       resources: {
         comment_1: {
           id: 'comment_1',
@@ -288,7 +328,7 @@ describe('createReducer', () => {
       requests: {},
     };
 
-    const expectedUsersState = {
+    const expectedUsersState: ResourceState = {
       resources: {
         user_1: {
           id: 'user_1',
@@ -316,6 +356,7 @@ describe('createReducer', () => {
           status: 'PENDING',
           ids: [],
           includedResources: {},
+          isList: false,
         },
       },
     };
@@ -328,7 +369,7 @@ describe('createReducer', () => {
       playload: ['article_1'],
     };
 
-    const expectedState = {
+    const expectedState: ResourceState = {
       resources: {
         article_1: getArticle(),
       },
@@ -338,6 +379,7 @@ describe('createReducer', () => {
           status: 'FAILED',
           ids: [],
           includedResources: {},
+          isList: false,
         },
       },
     };
@@ -373,6 +415,7 @@ describe('createReducer', () => {
           status: 'PENDING',
           ids: ['article_1'],
           includedResources: {},
+          isList: false,
         },
       },
     };
@@ -409,6 +452,7 @@ describe('createReducer', () => {
           status: 'SUCCEEDED',
           ids: ['article_1'],
           includedResources: {},
+          isList: false,
         },
       },
     };
@@ -446,6 +490,7 @@ describe('createReducer', () => {
           status: 'FAILED',
           ids: ['article_1'],
           includedResources: {},
+          isList: false,
         },
       },
     };
@@ -456,7 +501,7 @@ describe('createReducer', () => {
   it('should reducer skip action if key doesn\'t match', () => {
     const reducer = createReducers(config).articles;
 
-    const initialState = {
+    const initialState: ResourceState = {
       resources: {},
       requests: {},
     };

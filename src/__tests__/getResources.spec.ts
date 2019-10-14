@@ -43,6 +43,7 @@ function getState(): StoreState<any> {
           includedResources: {
             comments: true,
           },
+          isList: true,
         },
       },
     },

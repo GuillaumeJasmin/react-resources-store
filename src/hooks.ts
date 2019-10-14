@@ -7,12 +7,11 @@ import { AxiosReduxContext } from './context';
 import { AxiosRequestConfig } from './types';
 import { KEY } from './contants';
 import { getRequestResources } from './getRequestResources';
-import { getResourcesFromIds } from './getResourcesFromIds';
-import { getIncludedResourcesSchema } from './getIncludedResourcesSchema';
+import { getRequest } from './getRequest';
 
 const methodsToType = {
-  GET: 'READ',
-  POST: 'CREATE',
+  GET: 'UPDATE',
+  POST: 'UPDATE',
   PATCH: 'UPDATE',
   PUT: 'UPDATE',
   DELETE: 'DELETE',
@@ -36,24 +35,22 @@ export function useRequest<Data = any>(config: AxiosRequestConfig): [Data, boole
   const refConfig = useRef(config);
   const refSelector = useRef(null);
   const requestKey = useMemo(() => getRequestKey(refConfig.current), []);
-  const { resourceType, resourceId } = useMemo(
+  const { resourceType } = useMemo(
     () => getResourceInfos(refConfig.current),
     [],
   );
-  const hasCache = !!store.getState()[resourceType].requests[requestKey];
-  const [loading, setLoading] = useState(!hasCache);
+
+  const request = getRequest(store.getState(), resourceType, requestKey);
+  const requestIsPending = !request || request.status !== 'SUCCEEDED';
+  const hasCache = !!request;
 
   const isGet = config.method.toUpperCase() === 'GET';
 
   let data = null;
 
-  // @ts-ignore TODO
-  const includedResources: any = getIncludedResourcesSchema(reducersConfig, resourceType);
 
   if (isGet) {
-    data = resourceId
-      ? getRequestResources(refSelector, reducersConfig, store.getState(), resourceType, requestKey)
-      : getResourcesFromIds(refSelector, reducersConfig, store.getState(), resourceType, resourceId, includedResources);
+    data = getRequestResources(refSelector, reducersConfig, store.getState(), resourceType, requestKey);
   }
 
   useMount(() => {
@@ -84,12 +81,9 @@ export function useRequest<Data = any>(config: AxiosRequestConfig): [Data, boole
       type: `${type}_PENDING`,
       requestKey,
       resourceType,
-      resourceId,
     });
 
     api.request(config).then((response: AxiosResponse) => {
-      setLoading(false);
-
       if (isGet) {
         // listen next updtae only after api response
         unsubscribe = store.subscribe(() => {
@@ -104,7 +98,6 @@ export function useRequest<Data = any>(config: AxiosRequestConfig): [Data, boole
         requestKey,
         resourceType,
         payload: response.data,
-        resourceId,
       });
     });
 
@@ -115,7 +108,7 @@ export function useRequest<Data = any>(config: AxiosRequestConfig): [Data, boole
     };
   });
 
-  return [data, loading];
+  return [data, requestIsPending];
 }
 
 export function useLazyRequest<Params = any, Data = any>(
@@ -133,25 +126,35 @@ export function useLazyRequest<Params = any, Data = any>(
       // @ts-ignore
       const type = methodsToType[config.method.toUpperCase()];
 
+      const isDelete = config.method.toUpperCase() === 'DELETE';
+
       store.dispatch({
         key: KEY,
         type: `${type}_PENDING`,
         requestKey,
         resourceType,
-        resourceId,
       });
 
       setLoading(true);
 
       return api.request(config).then((response: AxiosResponse) => {
-        store.dispatch({
-          key: KEY,
-          type: `${type}_SUCCEEDED`,
-          requestKey,
-          resourceType,
-          payload: response.data,
-          resourceId,
-        });
+        if (!isDelete) {
+          store.dispatch({
+            key: KEY,
+            type: `${type}_SUCCEEDED`,
+            requestKey,
+            resourceType,
+            payload: response.data,
+          });
+        } else {
+          store.dispatch({
+            key: KEY,
+            type: `${type}_SUCCEEDED`,
+            requestKey,
+            resourceType,
+            payload: [resourceId],
+          });
+        }
 
         setLoading(false);
 

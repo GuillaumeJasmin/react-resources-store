@@ -1,11 +1,10 @@
 import { useContext, useState, useMemo, useRef, useCallback } from 'react';
 import { Unsubscribe } from 'redux';
 import uniqid from 'uniqid';
-import { AxiosPromise, AxiosResponse } from 'axios';
 import { useMount } from './hooks/useMount';
 import { AxiosReduxContext } from './context';
-import { AxiosRequestConfig } from './types';
 import { KEY } from './contants';
+import { createRequest } from './createRequest';
 import { getRequestResources } from './getRequestResources';
 import { getRequest } from './getRequest';
 
@@ -17,55 +16,54 @@ const methodsToType = {
   DELETE: 'DELETE',
 };
 
-function getResourceInfos(config: any) {
-  const [resourceType, resourceId] = config.url.split('/');
-  return { resourceType, resourceId };
-}
-
-function getRequestKey(config: AxiosRequestConfig) {
-  const urlStringify = JSON.stringify(config.url);
-  const methodStringify = JSON.stringify(config.method);
-  const paramsStringify = JSON.stringify(config.params);
+function getRequestKey(url: string, method: string, params: any) {
+  const urlStringify = JSON.stringify(url);
+  const methodStringify = JSON.stringify(method);
+  const paramsStringify = JSON.stringify(params);
   return btoa(urlStringify + methodStringify + paramsStringify) || uniqid();
 }
 
-export function useRequest<Data = any>(config: AxiosRequestConfig): [Data, boolean] {
-  const { store, api, config: reducersConfig } = useContext(AxiosReduxContext);
+export function useRequest<Data = any>(...argsRequest: any): [Data, boolean, { requestKey: string }] {
+  const { store, config, resolver } = useContext(AxiosReduxContext);
   const [, setLastUpdate] = useState<number>(0);
-  const refConfig = useRef(config);
   const refSelector = useRef(null);
-  const requestKey = useMemo(() => getRequestKey(refConfig.current), []);
-  const { resourceType } = useMemo(
-    () => getResourceInfos(refConfig.current),
-    [],
-  );
 
+  const {
+    url,
+    method,
+    request: resquestTrigger,
+    params,
+    resourceType,
+  } = createRequest({
+    resolver,
+    argsRequest,
+  });
+
+  const requestKey = useMemo(() => getRequestKey(url, method, params), [url, method, params]);
   const request = getRequest(store.getState(), resourceType, requestKey);
   const requestIsPending = !request || request.status !== 'SUCCEEDED';
   const hasCache = !!request;
 
-  const isGet = config.method.toUpperCase() === 'GET';
+  const isGet = method.toUpperCase() === 'GET';
 
   let data = null;
 
-
   if (isGet) {
-    data = getRequestResources(refSelector, reducersConfig, store.getState(), resourceType, requestKey);
+    data = getRequestResources(refSelector, config, store.getState(), resourceType, requestKey);
   }
 
   useMount(() => {
     let unsubscribe: Unsubscribe;
 
+    if (isGet) {
+      unsubscribe = store.subscribe(() => {
+        // force refresh
+        setLastUpdate(Date.now());
+      });
+    }
+
     // if request already exist, abort request
     if (hasCache) {
-      if (isGet) {
-        // listen next updtae only after api response
-        unsubscribe = store.subscribe(() => {
-          // force refresh
-          setLastUpdate(Date.now());
-        });
-      }
-
       return () => {
         if (unsubscribe) {
           unsubscribe();
@@ -74,32 +72,36 @@ export function useRequest<Data = any>(config: AxiosRequestConfig): [Data, boole
     }
 
     // @ts-ignore
-    const type = methodsToType[config.method.toUpperCase()];
-
-    store.dispatch({
+    const type = methodsToType[method.toUpperCase()];
+    const pendingType = `${type}_PENDING`;
+    const succeededType = `${type}_SUCCEEDED`;
+    const failedType = `${type}_FAILED`;
+    const action = {
       key: KEY,
-      type: `${type}_PENDING`,
       requestKey,
       resourceType,
+    };
+
+    store.dispatch({
+      ...action,
+      type: pendingType,
     });
 
-    api.request(config).then((response: AxiosResponse) => {
-      if (isGet) {
-        // listen next updtae only after api response
-        unsubscribe = store.subscribe(() => {
-          // force refresh
-          setLastUpdate(Date.now());
+    resquestTrigger(
+      (succeededData) => {
+        store.dispatch({
+          ...action,
+          type: succeededType,
+          payload: succeededData.data,
         });
-      }
-
-      store.dispatch({
-        key: KEY,
-        type: `${type}_SUCCEEDED`,
-        requestKey,
-        resourceType,
-        payload: response.data,
-      });
-    });
+      },
+      (/* failedData */) => {
+        store.dispatch({
+          ...action,
+          type: failedType,
+        });
+      },
+    );
 
     return () => {
       if (unsubscribe) {
@@ -108,61 +110,103 @@ export function useRequest<Data = any>(config: AxiosRequestConfig): [Data, boole
     };
   });
 
-  return [data, requestIsPending];
+  return [data, requestIsPending, { requestKey }];
 }
 
-export function useLazyRequest<Params = any, Data = any>(
-  fn: (params: Params) => AxiosRequestConfig,
-): [(params: Params) => AxiosPromise<Data>, boolean] {
-  const { store, api } = useContext(AxiosReduxContext);
+export function useLazyRequest<Params = any, Data = any>(...argsRequest: any): [(params: Params) => Promise<Data>, boolean] {
+  const { store, resolver } = useContext(AxiosReduxContext);
   const [loading, setLoading] = useState(false);
 
   const lazyRequest = useCallback(
-    (params: Params): AxiosPromise<Data> => {
-      const config = fn(params);
-      const requestKey = getRequestKey(config);
-      const { resourceType, resourceId } = getResourceInfos(config);
+    (localParams: Params): Promise<Data> => {
+      const argsRequestHandled = argsRequest.map((arg: any) => (typeof arg === 'function'
+        ? arg(localParams)
+        : arg));
+
+      const {
+        url,
+        method,
+        resourceId,
+        request: resquestTrigger,
+        params,
+        resourceType,
+      } = createRequest({
+        resolver,
+        argsRequest: argsRequestHandled,
+      });
+
+      const requestKey = getRequestKey(url, method, params);
 
       // @ts-ignore
-      const type = methodsToType[config.method.toUpperCase()];
-
-      const isDelete = config.method.toUpperCase() === 'DELETE';
-
-      store.dispatch({
+      const type = methodsToType[method.toUpperCase()];
+      const pendingType = `${type}_PENDING`;
+      const succeededType = `${type}_SUCCEEDED`;
+      const failedType = `${type}_FAILED`;
+      const action = {
         key: KEY,
-        type: `${type}_PENDING`,
         requestKey,
         resourceType,
+      };
+
+      store.dispatch({
+        ...action,
+        type: pendingType,
       });
 
       setLoading(true);
 
-      return api.request(config).then((response: AxiosResponse) => {
-        if (!isDelete) {
-          store.dispatch({
-            key: KEY,
-            type: `${type}_SUCCEEDED`,
-            requestKey,
-            resourceType,
-            payload: response.data,
-          });
-        } else {
-          store.dispatch({
-            key: KEY,
-            type: `${type}_SUCCEEDED`,
-            requestKey,
-            resourceType,
-            payload: [resourceId],
-          });
-        }
+      return new Promise((resolve, reject) => {
+        resquestTrigger(
+          (succeededData) => {
+            const isDelete = method.toUpperCase() === 'DELETE';
+            if (!isDelete) {
+              store.dispatch({
+                ...action,
+                type: succeededType,
+                payload: succeededData.data,
+              });
 
-        setLoading(false);
+              // TODO: this works only for axios
+              const readRequestKey = argsRequestHandled.length > 1 ? argsRequestHandled[1] : null;
 
-        return response;
+              if (readRequestKey) {
+                const ids = Array.isArray(succeededData.data)
+                  ? succeededData.data.map((item) => item.id)
+                  : [succeededData.data.id];
+
+                store.dispatch({
+                  key: KEY,
+                  type: 'INSERT_REQUEST_RESOURCE',
+                  resourceType,
+                  requestKey: readRequestKey,
+                  ids,
+                });
+              }
+            } else {
+              store.dispatch({
+                ...action,
+                type: succeededType,
+                payload: [resourceId],
+              });
+            }
+            resolve(succeededData.raw);
+            setLoading(false);
+          },
+          (failedData) => {
+            store.dispatch({
+              ...action,
+              type: failedType,
+            });
+
+            reject(new Error(failedData.raw));
+            setLoading(false);
+          },
+        );
       });
     },
+    // must disable eslint waring because argsRequest is not memoize
     // eslint-disable-next-line
-    [api, store]
+    [resolver, store],
   );
 
   return [lazyRequest, loading];

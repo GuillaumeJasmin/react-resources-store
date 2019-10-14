@@ -10,7 +10,8 @@ export type ActionType =
   | 'UPDATE_SUCCEEDED'
   | 'DELETE_SUCCEEDED'
   | 'UPDATE_FAILED'
-  | 'DELETE_FAILED';
+  | 'DELETE_FAILED'
+  | 'INSERT_REQUEST_RESOURCE';
 
 export interface AxiosRequestConfig extends AxiosRequestConfigBase {
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -45,7 +46,29 @@ export type StoreState<Resources> = {
   [resourceType in keyof Resources]: ResourceState<Resources[resourceType]>;
 };
 
+export interface SucceededArgs {
+  raw: any
+  data: any,
+}
+
+export interface FailedArgs {
+  raw: any
+}
+
+export type Resolver = (...args: any) => {
+  url: string,
+  method: string,
+  resourceType: string,
+  resourceId: string | null,
+  params: object,
+  request: (
+    succeeded: (args: SucceededArgs) => void,
+    failed: (args: SucceededArgs) => void
+  ) => void
+}
+
 export interface AxiosReduxContextValue<Resources = any> {
+  resolver: Resolver,
   store: Store<StoreState<Resources>>;
   api: AxiosInstance;
   config: ReducersConfig,

@@ -180,6 +180,21 @@ export function createReducers(config: ReducersConfig) {
           };
         }
 
+        case 'INSERT_REQUEST_RESOURCE': {
+          if (!isMainResourceType) return state;
+
+          return {
+            ...state,
+            requests: {
+              ...state.requests,
+              [requestKey]: {
+                ...state.requests[requestKey],
+                ids: [...state.requests[requestKey].ids, action.ids],
+              },
+            },
+          };
+        }
+
         default:
           break;
       }

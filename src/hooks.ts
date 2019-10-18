@@ -2,7 +2,7 @@ import { useContext, useState, useMemo, useRef, useCallback } from 'react';
 import { Unsubscribe } from 'redux';
 import uniqid from 'uniqid';
 import { useMount } from './hooks/useMount';
-import { AxiosReduxContext } from './context';
+import { Context } from './context';
 import { KEY } from './contants';
 import { createRequest } from './createRequest';
 import { getRequestResources } from './getRequestResources';
@@ -33,7 +33,7 @@ type UseRequestOutput<Data = any> = [
   }]
 
 export function useRequest<Data = any>(requestConfig: any, options: Options = {}): UseRequestOutput<Data> {
-  const { store, config, resolver } = useContext(AxiosReduxContext);
+  const { store, config, resolver } = useContext(Context);
   const [, setLastUpdate] = useState<number>(0);
   const refSelector = useRef(null);
 
@@ -134,7 +134,7 @@ export function useRequest<Data = any>(requestConfig: any, options: Options = {}
 }
 
 export function useLazyRequest<Params = any, Data = any>(...argsRequest: any): [(params: Params) => Promise<Data>, boolean] {
-  const { store, resolver } = useContext(AxiosReduxContext);
+  const { store, resolver } = useContext(Context);
   const [loading, setLoading] = useState(false);
 
   const lazyRequest = useCallback(

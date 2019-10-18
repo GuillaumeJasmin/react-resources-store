@@ -1,4 +1,4 @@
-# Axios Redux
+# React Resources Hook
 
 ## Configure Redux store and Axios instance
 
@@ -7,7 +7,7 @@
 ```js
 import axios from 'axios'
 import { createStore, combineReducers } from 'redux'
-import { createReducers, AxiosReduxProvider, useRequest, useLazyRequest } from 'axios-redux-hook'
+import { createReducers, Provider, createAxiosResolver, useRequest, useLazyRequest } from 'react-resources-hook'
 
 const resourcesConfig = {
   articles: {
@@ -30,66 +30,46 @@ const reducers = createReducers(resourcesConfig)
 
 export const store = createStore(combineReducers(reducers))
 
-export const api = axios.create({
+export const axiosInstance = axios.create({
   baseURL: 'http://website.com/api/',
-  timeout: 20000,
 })
 
-export const axiosReduxContext = {
+export const contextValue = {
+  config,
+  resolver: createAxiosResolver(axiosInstance)
   store,
-  api,
-  config
 }
 ```
 
 `App.jsx`
 
 ```js
-import { axiosReduxContext } from './config'
+import { contextValue } from './config'
 
 const App = (
-  <AxiosReduxProvider value={axiosReduxContext}>
+  <Provider value={contextValue}>
     {...}
-  </AxiosReduxProvider>
+  </Provider>
 )
-
 ```
 
 ## Usage 
 ```js
 function Demo() {
-  const api = useAPI()
-
-  const [articles, pending, error] = useRequest({
+  const [articles, pending] = useRequest({
     url: 'articles',
     method: 'GET',
     params: {
-      filter: {
-        where: {
-          bookId: '...',
-        },
-        include: [
-          { relation: 'posts' }
-        ]
-      }
+      pageSize: 10,
     }
   })
 
   // axios
-  const [createArticle, pending, error] = useLazyRequest((data) => ({
+  const [createArticle, pending] = useLazyRequest((data) => ({
     url: 'articles',
     method: 'GET',
     data
   }))
-
-  // fetch
-  const [createArticle, pending, error] = useLazyRequest(
-    ({ id }) => `articles/${id}`,
-    (data) => ({
-      method: 'GET',
-      data
-    })
-  )
   
   const onClick = useCallbask(() => {
     createArticle({
@@ -107,114 +87,49 @@ function Demo() {
     </div>
   )
 }
-
 ```
 
-
-# Create your own api provider
-
-# Axios
+# Resolver
+## Axios
 
 ```js
 import axios from 'axios'
+import { createAxiosResolvers } from 'react-resources-hooks'
 
-const api = axios.create({
+const axiosInstance = axios.create({
   baseURL: 'http://website.com/api/',
-  timeout: 20000,
 })
 
-const axiosRequest = axiosConfig => {
-  // example with axiosConfig = /articles/1
-  // regex will extract 'articles' in order to use it as resourceType
-  const regexURL = /(\/)?([-a-zA-Z0-9()@:%_\+.~#?&=]*)(\/)?([-a-zA-Z0-9()@:%_\+.~#?&=]*)([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/
-  const match = axiosConfig.url.match(regexURL)
-
-  if (!match) {
-    throw new Error('axios URL doesn\'t match REST endpoint format')
-  }
-
-  const resourceType = axiosConfig.match(regexURL)[2]
-
-  if (!resourceType) {
-    throw new Error('axios URL doesn\'t match REST endpoint format. it must contain a resource type')
-  }
-  
-  const resourceId = fetchURL.match(regexURL)[4] || null
-
-  return {
-    method: axiosConfig.method,
-    resourceType,
-    params: axiosConfig.params,
-    request: (succeeded, failed) => {
-      axios.request(axiosConfig)
-        .then(response => {
-          succeeded({
-            raw: response
-            data: response.data,
-          })
-        })
-        .catch(response => {
-          failed({
-            raw: response
-          })
-          
-          // Here, you can trigger a notification error
-        })
-    }
-  }
+export const contextValue = {
+  config,
+  resolver: createAxiosResolvers(axiosInstance),
+  store,
 }
+
+const App = (
+  <Provider value={contextValue}>
+    {...}
+  </Provider>
+)
 ```
 
-# Fetch
+## Fetch
 
 ```js
-const fetchRequest = (fetchURL, fetchConfig) => {
-  // example with fetchURL = https://website/articles/1
-  // regex will extract 'articles' in order to use it as resourceType
-  const regexURL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b\/([-a-zA-Z0-9()@:%_\+.~#?&=]*)(\/)?([-a-zA-Z0-9()@:%_\+.~#?&=]*)([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/
-  const match = fetchURL.match(regexURL)
+import axios from 'axios'
+import { fetchResolver } from 'react-resources-hooks'
 
-  if (!match) {
-    throw new Error('fetch URL doesn\'t match REST endpoint format')
-  }
-
-  const resourceType = fetchURL.match(regexURL)[2]
-
-  if (!resourceType) {
-    throw new Error('fetch URL doesn\'t match REST endpoint format. it must contain a resource type')
-  }
-
-  const resourceId = fetchURL.match(regexURL)[4] || null
-
-  const queryString = fetchURL.split('?')[1]
-  const queryParams = !queryString
-    ? {}
-    : queryString
-        .split('&')
-        .map(chunk => chunk.split('='))
-        .reduce((a, b) => ({ ...a, [b[0]]: b[1] }), { })
-
-  return {
-    method: fetchConfig.method,
-    resourceType,
-    resourceId,
-    params: queryParams,
-    request: (succeeded, failed) => {
-      fetch(fetchURL, fetchConfig)
-        .then(response => {
-          succeeded({
-            raw: response
-            data: res.json(),
-          })
-        })
-        .catch(response => {
-          failed({
-            raw: response
-          })
-          
-          // Here, you can trigger a notification error
-        })
-    }
-  }
+export const contextValue = {
+  config,
+  resolver: fetchResolver,
+  store,
 }
+
+const App = (
+  <Provider value={contextValue}>
+    {...}
+  </Provider>
+)
 ```
+
+## Build your resolver

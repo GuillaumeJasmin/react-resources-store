@@ -1,7 +1,3 @@
-import {
-  AxiosInstance,
-  AxiosRequestConfig as AxiosRequestConfigBase,
-} from 'axios';
 import { Store } from 'redux';
 
 export type ActionType =
@@ -12,10 +8,6 @@ export type ActionType =
   | 'UPDATE_FAILED'
   | 'DELETE_FAILED'
   | 'INSERT_REQUEST_RESOURCE';
-
-export interface AxiosRequestConfig extends AxiosRequestConfigBase {
-  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
-}
 
 export interface Action {
   type: ActionType;
@@ -55,6 +47,9 @@ export interface FailedArgs {
   raw: any
 }
 
+export type SucceededFn = (args: SucceededArgs) => void
+export type FailedFn = (args: FailedArgs) => void
+
 export type Resolver = (...args: any) => {
   url: string,
   method: string,
@@ -62,16 +57,15 @@ export type Resolver = (...args: any) => {
   resourceId: string | null,
   params: object,
   request: (
-    succeeded: (args: SucceededArgs) => void,
-    failed: (args: SucceededArgs) => void
+    succeeded: SucceededFn,
+    failed: FailedFn
   ) => void
 }
 
-export interface AxiosReduxContextValue<Resources = any> {
+export interface ContextValue<Resources = any> {
+  config: ReducersConfig,
   resolver: Resolver,
   store: Store<StoreState<Resources>>;
-  api: AxiosInstance;
-  config: ReducersConfig,
 }
 
 export interface ReducersConfig {

@@ -1,20 +1,20 @@
 import React, { createContext } from 'react';
-import { AxiosReduxContextValue } from './types';
+import { ContextValue } from './types';
 
-export const AxiosReduxContext = createContext<AxiosReduxContextValue>(
+export const Context = createContext<ContextValue>(
   null as any,
 );
 
 interface Props {
-  value: AxiosReduxContextValue;
+  value: ContextValue;
   children: any;
 }
 
-export function AxiosReduxProvider(props: Props) {
+export function Provider(props: Props) {
   const { value, children } = props;
   return (
-    <AxiosReduxContext.Provider value={value}>
+    <Context.Provider value={value}>
       {children}
-    </AxiosReduxContext.Provider>
+    </Context.Provider>
   );
 }

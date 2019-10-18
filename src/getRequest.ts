@@ -1,9 +1,5 @@
 import { Request, StoreState } from './types';
 
-interface Ref {
-  current: any
-}
-
 export function getRequest(
   state: StoreState<any>,
   resourceType: string,

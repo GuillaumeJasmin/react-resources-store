@@ -7,6 +7,7 @@ import { KEY } from './contants';
 import { createRequest } from './createRequest';
 import { getRequestResources } from './getRequestResources';
 import { getRequest } from './getRequest';
+import { Options } from './types';
 
 const methodsToType = {
   GET: 'UPDATE',
@@ -23,7 +24,15 @@ function getRequestKey(url: string, method: string, params: any) {
   return btoa(urlStringify + methodStringify + paramsStringify) || uniqid();
 }
 
-export function useRequest<Data = any>(...argsRequest: any): [Data, boolean, { requestKey: string }] {
+type UseRequestOutput<Data = any> = [
+  Data,
+  boolean,
+  {
+    requestKey: string,
+    refetch: () => void,
+  }]
+
+export function useRequest<Data = any>(requestConfig: any, options: Options = {}): UseRequestOutput<Data> {
   const { store, config, resolver } = useContext(AxiosReduxContext);
   const [, setLastUpdate] = useState<number>(0);
   const refSelector = useRef(null);
@@ -36,10 +45,13 @@ export function useRequest<Data = any>(...argsRequest: any): [Data, boolean, { r
     resourceType,
   } = createRequest({
     resolver,
-    argsRequest,
+    argsRequest: [requestConfig],
   });
 
+  const fetchPolicy: Options['fetchPolicy'] = options.fetchPolicy || 'cache-first';
+
   const requestKey = useMemo(() => getRequestKey(url, method, params), [url, method, params]);
+
   const request = getRequest(store.getState(), resourceType, requestKey);
   const requestIsPending = !request || request.status !== 'SUCCEEDED';
   const hasCache = !!request;
@@ -49,28 +61,10 @@ export function useRequest<Data = any>(...argsRequest: any): [Data, boolean, { r
   let data = null;
 
   if (isGet) {
-    data = getRequestResources(refSelector, config, store.getState(), resourceType, requestKey);
+    data = getRequestResources(refSelector, config, store.getState(), resourceType, requestKey, options.includedResources);
   }
 
-  useMount(() => {
-    let unsubscribe: Unsubscribe;
-
-    if (isGet) {
-      unsubscribe = store.subscribe(() => {
-        // force refresh
-        setLastUpdate(Date.now());
-      });
-    }
-
-    // if request already exist, abort request
-    if (hasCache) {
-      return () => {
-        if (unsubscribe) {
-          unsubscribe();
-        }
-      };
-    }
-
+  const fetch = useCallback((dispatchPending = true) => {
     // @ts-ignore
     const type = methodsToType[method.toUpperCase()];
     const pendingType = `${type}_PENDING`;
@@ -82,10 +76,12 @@ export function useRequest<Data = any>(...argsRequest: any): [Data, boolean, { r
       resourceType,
     };
 
-    store.dispatch({
-      ...action,
-      type: pendingType,
-    });
+    if (dispatchPending) {
+      store.dispatch({
+        ...action,
+        type: pendingType,
+      });
+    }
 
     resquestTrigger(
       (succeededData) => {
@@ -102,6 +98,30 @@ export function useRequest<Data = any>(...argsRequest: any): [Data, boolean, { r
         });
       },
     );
+  }, [method, requestKey, resourceType, resquestTrigger, store]);
+
+  const refetch = useCallback(() => {
+    fetch(false);
+  }, [fetch]);
+
+  useMount(() => {
+    let unsubscribe: Unsubscribe;
+
+    if (isGet) {
+      unsubscribe = store.subscribe(() => {
+        // force refresh
+        setLastUpdate(Date.now());
+      });
+    }
+
+    if (
+      fetchPolicy === 'cache-and-network'
+      || fetchPolicy === 'network-only'
+      || (fetchPolicy === 'cache-first' && !hasCache)
+    ) {
+      const dispatchPending = !hasCache;
+      fetch(dispatchPending);
+    }
 
     return () => {
       if (unsubscribe) {
@@ -110,7 +130,7 @@ export function useRequest<Data = any>(...argsRequest: any): [Data, boolean, { r
     };
   });
 
-  return [data, requestIsPending, { requestKey }];
+  return [data, requestIsPending, { requestKey, refetch }];
 }
 
 export function useLazyRequest<Params = any, Data = any>(...argsRequest: any): [(params: Params) => Promise<Data>, boolean] {

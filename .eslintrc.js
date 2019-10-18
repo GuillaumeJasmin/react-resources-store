@@ -23,7 +23,8 @@ module.exports = {
     'object-curly-newline': 0,
     'react-hooks/rules-of-hooks': 2,
     'react-hooks/exhaustive-deps': 'warn',
-    'react/jsx-filename-extension': 0
+    'react/jsx-filename-extension': 0,
+    'arrow-body-style': 0,
   },
   settings: {
     'import/parsers': {

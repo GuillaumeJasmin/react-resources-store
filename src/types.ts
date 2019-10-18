@@ -87,3 +87,14 @@ export interface ReducersConfig {
 export interface IncludedResourceParams {
   [resourceType: string]: true | IncludedResourceParams
 }
+
+export type FetchPolicy =
+  | 'cache-first'
+  | 'cache-and-network'
+  | 'network-only' // network-only not already supported
+  | 'cache-only';
+
+export interface Options {
+  includedResources?: IncludedResourceParams,
+  fetchPolicy?: FetchPolicy,
+}

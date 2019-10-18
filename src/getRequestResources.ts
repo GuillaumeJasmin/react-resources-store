@@ -12,6 +12,7 @@ export function getRequestResources(
   state: StoreState<any>,
   resourceType: string,
   requestKey: string,
+  includedResourcesParams?: any,
 ) {
   const request = getRequest(state, resourceType, requestKey);
 
@@ -31,6 +32,9 @@ export function getRequestResources(
     state,
     resourceType,
     idsParams,
-    includedResources,
+    {
+      ...includedResources,
+      ...includedResourcesParams,
+    },
   );
 }

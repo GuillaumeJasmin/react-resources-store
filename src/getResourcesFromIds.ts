@@ -116,6 +116,10 @@ export function getResourcesFromIds(
         return resource;
       }
 
+      if (!ids) {
+        return null;
+      }
+
       if (typeof ids === 'string') {
         return getOneResource(ids);
       }

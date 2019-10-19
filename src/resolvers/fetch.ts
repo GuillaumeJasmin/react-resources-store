@@ -6,7 +6,7 @@ export function fetchResolver(fetchConfig: any) {
   const { url } = fetchConfig;
 
   // eslint-disable-next-line max-len
-  const regexURL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b\/([-a-zA-Z0-9()@:%_+.~#?&=]*)(\/)?([-a-zA-Z0-9()@:%_+.~#?&=]*)([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/;
+  const regexURL = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b\/([-a-zA-Z0-9()@:%_+.~#&=]*)(\/)?([-a-zA-Z0-9()@:%_+.~#?&=]*)([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/;
   const match = url.match(regexURL);
 
   if (!match) {
@@ -30,6 +30,7 @@ export function fetchResolver(fetchConfig: any) {
       .reduce((a: object, b: string[]) => ({ ...a, [b[0]]: b[1] }), { });
 
   return {
+    url: fetchConfig.url,
     method: fetchConfig.method,
     resourceType,
     resourceId,

@@ -129,6 +129,8 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
           forceUpdate(Date.now());
         }
       });
+    } else {
+      throw new Error('useRequest() support only GET HTTP method');
     }
 
     if (

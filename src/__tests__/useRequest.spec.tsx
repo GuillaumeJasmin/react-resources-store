@@ -154,17 +154,12 @@ describe('useRequest', () => {
       return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'cache-first' });
     }, { wrapper });
 
-    const returnExpected = [
-      [{
-        id: 'article_1',
-        name: 'Artice 1',
-      }],
-      {
-        loading: false,
-        requestPending: false,
-      },
-    ];
-    expect(result.current).toEqual(returnExpected);
+    expect(result.current[0]).toEqual([{
+      id: 'article_1',
+      name: 'Artice 1',
+    }]);
+    expect(result.current[1].loading).toBe(false);
+    expect(result.current[1].requestPending).toBe(false);
 
     await act(async () => {
       await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
@@ -173,6 +168,53 @@ describe('useRequest', () => {
     expect(fakeFetch).toBeCalledTimes(0);
     expect(useRequestFn).toBeCalledTimes(1);
   });
+
+  // it('fetchPolicy: cache-first - with cache - refetch', async () => {
+  //   const { wrapper, fakeFetch } = getWrapper();
+
+  //   const useRequestFn = jest.fn(useRequest);
+
+  //   const { result, waitForNextUpdate } = renderHook(() => {
+  //     return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'cache-first' });
+  //   }, { wrapper });
+
+  //   const returnExpected = [
+  //     [{
+  //       id: 'article_1',
+  //       name: 'Artice 1',
+  //     }],
+  //     {
+  //       loading: false,
+  //       requestPending: false,
+  //     },
+  //   ];
+  //   expect(result.current).toEqual(returnExpected);
+
+  //   await act(async () => {
+  //     await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
+  //   });
+
+  //   expect(fakeFetch).toBeCalledTimes(0);
+  //   expect(useRequestFn).toBeCalledTimes(1);
+
+  //   // const returnExpectedRefetch = [
+  //   //   [{
+  //   //     id: 'article_1',
+  //   //     name: 'Artice 1',
+  //   //   }],
+  //   //   {
+  //   //     loading: false,
+  //   //     requestPending: false,
+  //   //   },
+  //   // ];
+
+  //   // await act(async () => {
+  //   //   result.current[1].refetch();
+  //   //   await waitForNextUpdate();
+  //   //   expect(result.current)
+  //   //   // await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
+  //   // });
+  // });
 
   it('fetchPolicy: cache-first - without cache', async () => {
     const store = getFakeStore();
@@ -191,30 +233,18 @@ describe('useRequest', () => {
       return useRequestFn({ ...getRequestArgsNotCached() }, { fetchPolicy: 'cache-first' });
     }, { wrapper });
 
-    const firstReturnExpected = [
-      null,
-      {
-        loading: true,
-        requestPending: true,
-      },
-    ];
-
-    const secondReturnExpected = [
-      [{
-        id: 'article_1',
-        name: 'Artice 1',
-      }],
-      {
-        loading: false,
-        requestPending: false,
-      },
-    ];
-
-    expect(result.current).toEqual(firstReturnExpected);
+    expect(result.current[0]).toEqual(null);
+    expect(result.current[1].loading).toBe(true);
+    expect(result.current[1].requestPending).toBe(true);
 
     await act(async () => {
       await waitForNextUpdate();
-      expect(result.current).toEqual(secondReturnExpected);
+      expect(result.current[0]).toEqual([{
+        id: 'article_1',
+        name: 'Artice 1',
+      }]);
+      expect(result.current[1].loading).toBe(false);
+      expect(result.current[1].requestPending).toBe(false);
       await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
     });
 
@@ -238,35 +268,23 @@ describe('useRequest', () => {
       return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'cache-and-network' });
     }, { wrapper });
 
-    const firstReturnExpected = [
-      [{
-        id: 'article_1',
-        name: 'Artice 1',
-      }],
-      {
-        loading: false,
-        requestPending: true,
-      },
-    ];
+    expect(result.current[0]).toEqual([{
+      id: 'article_1',
+      name: 'Artice 1',
+    }]);
+    expect(result.current[1].loading).toBe(false);
+    expect(result.current[1].requestPending).toBe(true);
 
-    const secondReturnExpected = [
-      [
+    await act(async () => {
+      await waitForNextUpdate();
+      expect(result.current[0]).toEqual([
         {
           id: 'article_1',
           name: 'Artice 1',
         },
-      ],
-      {
-        loading: false,
-        requestPending: false,
-      },
-    ];
-
-    expect(result.current).toEqual(firstReturnExpected);
-
-    await act(async () => {
-      await waitForNextUpdate();
-      expect(result.current).toEqual(secondReturnExpected);
+      ]);
+      expect(result.current[1].loading).toBe(false);
+      expect(result.current[1].requestPending).toBe(false);
       await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
     });
 
@@ -292,32 +310,20 @@ describe('useRequest', () => {
       return useRequestFn({ ...getRequestArgsNotCached() }, { fetchPolicy: 'cache-and-network' });
     }, { wrapper });
 
-    const firstReturnExpected = [
-      null,
-      {
-        loading: true,
-        requestPending: true,
-      },
-    ];
+    expect(result.current[0]).toEqual(null);
+    expect(result.current[1].loading).toBe(true);
+    expect(result.current[1].requestPending).toBe(true);
 
-    const secondReturnExpected = [
-      [
+    await act(async () => {
+      await waitForNextUpdate();
+      expect(result.current[0]).toEqual([
         {
           id: 'article_1',
           name: 'Artice 1',
         },
-      ],
-      {
-        loading: false,
-        requestPending: false,
-      },
-    ];
-
-    expect(result.current).toEqual(firstReturnExpected);
-
-    await act(async () => {
-      await waitForNextUpdate();
-      expect(result.current).toEqual(secondReturnExpected);
+      ]);
+      expect(result.current[1].loading).toBe(false);
+      expect(result.current[1].requestPending).toBe(false);
       await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
     });
 
@@ -343,27 +349,9 @@ describe('useRequest', () => {
       return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'network-only' });
     }, { wrapper });
 
-    const firstReturnExpected = [
-      null,
-      {
-        loading: true,
-        requestPending: true,
-      },
-    ];
-    const secondReturnExpected = [
-      [
-        {
-          id: 'article_1',
-          name: 'Artice 1',
-        },
-      ],
-      {
-        loading: false,
-        requestPending: false,
-      },
-    ];
-
-    expect(result.current).toEqual(firstReturnExpected);
+    expect(result.current[0]).toEqual(null);
+    expect(result.current[1].loading).toBe(true);
+    expect(result.current[1].requestPending).toBe(true);
 
     // leave rthis console.log to debug when test failed (bug hard to reproduce)
     // eslint-disable-next-line
@@ -371,7 +359,14 @@ describe('useRequest', () => {
 
     await act(async () => {
       await waitForNextUpdate();
-      expect(result.current).toEqual(secondReturnExpected);
+      expect(result.current[0]).toEqual([
+        {
+          id: 'article_1',
+          name: 'Artice 1',
+        },
+      ]);
+      expect(result.current[1].loading).toBe(false);
+      expect(result.current[1].requestPending).toBe(false);
       await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
     });
 
@@ -387,20 +382,14 @@ describe('useRequest', () => {
       return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'cache-only' });
     }, { wrapper });
 
-    const returnExpected = [
-      [
-        {
-          id: 'article_1',
-          name: 'Artice 1',
-        },
-      ],
+    expect(result.current[0]).toEqual([
       {
-        loading: false,
-        requestPending: false,
+        id: 'article_1',
+        name: 'Artice 1',
       },
-    ];
-
-    expect(result.current).toEqual(returnExpected);
+    ]);
+    expect(result.current[1].loading).toBe(false);
+    expect(result.current[1].requestPending).toBe(false);
 
     await act(async () => {
       await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
@@ -419,15 +408,9 @@ describe('useRequest', () => {
       return useRequestFn({ ...getRequestArgsNotCached() }, { fetchPolicy: 'cache-only' });
     }, { wrapper });
 
-    const returnExpected = [
-      null,
-      {
-        loading: false,
-        requestPending: false,
-      },
-    ];
-
-    expect(result.current).toEqual(returnExpected);
+    expect(result.current[0]).toEqual(null);
+    expect(result.current[1].loading).toBe(false);
+    expect(result.current[1].requestPending).toBe(false);
 
     await act(async () => {
       await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);

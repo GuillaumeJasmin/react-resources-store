@@ -35,7 +35,7 @@ export function createReducers(config: ReducersConfig) {
 
       const isMainResourceType = action.resourceType === resourceType;
 
-      const axiosReduxAction: Action = action;
+      const reactResourcesAction: Action = action;
 
       const missingProperties = [];
 
@@ -45,7 +45,7 @@ export function createReducers(config: ReducersConfig) {
 
       if (missingProperties.length > 0) {
         throw new Error(
-          `AxiosRedux - missing action properties: ${missingProperties.join(
+          `ReactResourcesHook - missing action properties: ${missingProperties.join(
             ', ',
           )}`,
         );
@@ -53,7 +53,7 @@ export function createReducers(config: ReducersConfig) {
 
       const { requestKey } = action;
 
-      switch (axiosReduxAction.type) {
+      switch (reactResourcesAction.type) {
         case 'UPDATE_PENDING': {
           if (!isMainResourceType) return state;
 
@@ -199,7 +199,7 @@ export function createReducers(config: ReducersConfig) {
           break;
       }
 
-      if (axiosReduxAction.type.endsWith('_FAILED')) {
+      if (reactResourcesAction.type.endsWith('_FAILED')) {
         return {
           ...state,
           requests: {

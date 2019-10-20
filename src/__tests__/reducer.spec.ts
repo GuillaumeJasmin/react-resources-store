@@ -91,7 +91,7 @@ describe('createReducer', () => {
       key: KEY,
     };
 
-    expect(() => reducer(undefined, action)).toThrow('AxiosRedux - missing action properties: resourceType');
+    expect(() => reducer(undefined, action)).toThrow('ReactResourcesHook - missing action properties: resourceType');
   });
 
   it('should reducer return default Resourcestate', () => {

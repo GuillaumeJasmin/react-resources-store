@@ -18,6 +18,9 @@
   "publishConfig": {
     "tag": "next"
   },
+  "files": [
+    "build"
+  ],
   "peerDependencies": {
     "react": "^16.10.1",
     "redux": "^4.0.4"

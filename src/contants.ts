@@ -1,1 +1,1 @@
-export const KEY = '@@AXIOS_REDUX';
+export const KEY = '@@REACT_RESOURCES_HOOK';

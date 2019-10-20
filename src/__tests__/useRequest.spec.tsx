@@ -5,7 +5,7 @@ import { act } from 'react-dom/test-utils';
 import { renderHook } from '@testing-library/react-hooks';
 import { Provider } from '../context';
 import { getRequestHash } from '../getRequestHash';
-import { createFetchMockResolver } from '../resolvers/mockResolver';
+import { createFetchMockResolver } from './mockResolver';
 import { createReducers } from '../createReducers';
 import { useRequest } from '../useRequest';
 

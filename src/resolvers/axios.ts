@@ -19,28 +19,30 @@ export function createAxiosResolver(axiosInstance: any) {
 
     const resourceId = axiosConfig.url.match(regexURL)[4] || null;
 
+    function request(succeeded: SucceededFn, failed: FailedFn) {
+      axiosInstance.request(axiosConfig)
+        .then((response: any) => {
+          succeeded({
+            raw: response,
+            data: response.data,
+          });
+        })
+        .catch((response: any) => {
+          failed({
+            raw: response,
+          });
+
+        // Here, you can trigger a notification error
+        });
+    }
+
     return {
       url: axiosConfig.url,
       method: axiosConfig.method,
       resourceType,
       resourceId,
       params: axiosConfig.params,
-      request: (succeeded: SucceededFn, failed: FailedFn) => {
-        axiosInstance.request(axiosConfig)
-          .then((response: any) => {
-            succeeded({
-              raw: response,
-              data: response.data,
-            });
-          })
-          .catch((response: any) => {
-            failed({
-              raw: response,
-            });
-
-          // Here, you can trigger a notification error
-          });
-      },
+      request,
     };
   };
 }

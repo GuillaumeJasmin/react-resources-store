@@ -1,7 +1,7 @@
-import { ReducersConfig } from '../types';
+import { Schema } from '../types';
 import { getIncludedResourcesSchema } from '../getIncludedResourcesSchema';
 
-const config: ReducersConfig = {
+const schema: Schema = {
   articles: {
     comments: {
       resourceType: 'comments',
@@ -50,7 +50,7 @@ const payload = [
 
 describe('getIncludedResourcesSchema', () => {
   it('should works', () => {
-    const includedResources = getIncludedResourcesSchema(config, 'articles', payload);
+    const includedResources = getIncludedResourcesSchema(schema, 'articles', payload);
 
     const expectedIncludedResources = {
       comments: {

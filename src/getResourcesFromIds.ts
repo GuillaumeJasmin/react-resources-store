@@ -1,5 +1,5 @@
 import { defaultMemoize, createSelectorCreator } from 'reselect';
-import { ReducersConfig, StoreState, IncludedResourceParams } from './types';
+import { Schema, StoreState, IncludedResourceParams } from './types';
 
 interface Ref {
   current: any
@@ -23,7 +23,7 @@ function isEqualish(v1: any, v2: any) {
 
 export function getResourcesFromIds(
   refSelector: Ref,
-  config: ReducersConfig,
+  config: Schema,
   state: StoreState<any>,
   resourceType: string,
   ids: string | string[],

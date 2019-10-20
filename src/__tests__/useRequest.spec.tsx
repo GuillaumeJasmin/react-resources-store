@@ -114,12 +114,12 @@ function getWrapper(options = {}) {
   };
 
   const wrapper = ({ children }: any) => {
-    const config = {
+    const schema = {
       articles: {},
     };
 
     const providerValue: any = {
-      config,
+      schema,
       resolver: createFetchMockResolver(fakeFetch),
       store,
     };

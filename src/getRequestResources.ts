@@ -1,4 +1,4 @@
-import { ReducersConfig, StoreState } from './types';
+import { Schema, StoreState } from './types';
 import { getResourcesFromIds } from './getResourcesFromIds';
 import { getRequest } from './getRequest';
 
@@ -8,7 +8,7 @@ interface Ref {
 
 export function getRequestResources(
   refSelector: Ref,
-  config: ReducersConfig,
+  config: Schema,
   state: StoreState<any>,
   resourceType: string,
   requestKey: string,

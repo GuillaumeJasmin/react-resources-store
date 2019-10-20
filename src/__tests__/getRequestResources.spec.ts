@@ -1,7 +1,7 @@
-import { StoreState, ReducersConfig } from '../types';
+import { StoreState, Schema } from '../types';
 import { getRequestResources } from '../getRequestResources';
 
-const config: ReducersConfig = {
+const schema: Schema = {
   articles: {
     comments: {
       resourceType: 'comments',
@@ -59,14 +59,14 @@ describe('getRequestResources', () => {
   it('should return list', () => {
     const state = getState();
     const ref = { current: null };
-    const articles = getRequestResources(ref, config, state, 'articles', 'request_1');
+    const articles = getRequestResources(ref, schema, state, 'articles', 'request_1');
     expect(Array.isArray(articles)).toBeTruthy();
   });
 
   it('should return item', () => {
     const state = getState();
     const ref = { current: null };
-    const article = getRequestResources(ref, config, state, 'articles', 'request_2');
+    const article = getRequestResources(ref, schema, state, 'articles', 'request_2');
     expect(Array.isArray(article)).toBeFalsy();
   });
 });

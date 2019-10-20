@@ -1,7 +1,7 @@
 import { pickBy, mapValues } from 'lodash';
-import { schema, normalize } from 'normalizr';
+import { schema as normalizrSchema, normalize } from 'normalizr';
 import { KEY } from './contants';
-import { ResourceState, Action, ReducersConfig, Request } from './types';
+import { ResourceState, Action, Schema, Request } from './types';
 import { getIncludedResourcesSchema } from './getIncludedResourcesSchema';
 
 const initialState = {
@@ -9,10 +9,10 @@ const initialState = {
   requests: {},
 };
 
-export function createReducers(config: ReducersConfig) {
-  const allSchemas = mapValues(config, (value, key) => new schema.Entity(key));
+export function createReducers(schema: Schema) {
+  const allSchemas = mapValues(schema, (value, key) => new normalizrSchema.Entity(key));
 
-  Object.entries(config).forEach(([key, schemaConfig]) => {
+  Object.entries(schema).forEach(([key, schemaConfig]) => {
     const schema = allSchemas[key];
     schema.define(
       mapValues(schemaConfig, (relation) => {
@@ -26,7 +26,7 @@ export function createReducers(config: ReducersConfig) {
   });
 
   const reducers = mapValues(
-    config,
+    schema,
     (value, resourceType) => (
       state: ResourceState = initialState,
       action: any,
@@ -119,7 +119,7 @@ export function createReducers(config: ReducersConfig) {
               requestKey,
               status: 'SUCCEEDED',
               ids: normalizeData.result,
-              includedResources: getIncludedResourcesSchema(config, resourceType, payloadAsArray),
+              includedResources: getIncludedResourcesSchema(schema, resourceType, payloadAsArray),
               isList,
             };
           }

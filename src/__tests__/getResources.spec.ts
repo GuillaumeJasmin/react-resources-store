@@ -1,7 +1,7 @@
-import { StoreState, ReducersConfig } from '../types';
+import { StoreState, Schema } from '../types';
 import { getRequestResources } from '../getRequestResources';
 
-const config: ReducersConfig = {
+const schema: Schema = {
   articles: {
     comments: {
       resourceType: 'comments',
@@ -69,14 +69,14 @@ describe('getRequestResources', () => {
   it('should return correct resource length', () => {
     const ref = { current: null };
     const state = getState();
-    const articles = getRequestResources(ref, config, state, 'articles', 'request_1');
+    const articles = getRequestResources(ref, schema, state, 'articles', 'request_1');
     expect(articles).toHaveLength(2);
   });
 
   it('should return correct resources order', () => {
     const ref = { current: null };
     const state = getState();
-    const articles = getRequestResources(ref, config, state, 'articles', 'request_1');
+    const articles = getRequestResources(ref, schema, state, 'articles', 'request_1');
     expect(articles[0].id).toEqual('article_2');
     expect(articles[1].id).toEqual('article_1');
   });
@@ -84,15 +84,15 @@ describe('getRequestResources', () => {
   it('should be memoize when there is no changes', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
-    const articles2 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
+    const articles1 = getRequestResources(ref, schema, { ...state }, 'articles', 'request_1');
+    const articles2 = getRequestResources(ref, schema, { ...state }, 'articles', 'request_1');
     expect(articles1 === articles2).toBeTruthy();
   });
 
   it('should be memoize where items not present into request ids are added or updated', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
+    const articles1 = getRequestResources(ref, schema, { ...state }, 'articles', 'request_1');
 
     state.articles = {
       ...state.articles,
@@ -109,14 +109,14 @@ describe('getRequestResources', () => {
       },
     };
 
-    const articles2 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
+    const articles2 = getRequestResources(ref, schema, { ...state }, 'articles', 'request_1');
     expect(articles1 === articles2).toBeTruthy();
   });
 
   it('should be unmemoize when item into list ids is updated', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
+    const articles1 = getRequestResources(ref, schema, { ...state }, 'articles', 'request_1');
 
     state.articles = {
       ...state.articles,
@@ -129,14 +129,14 @@ describe('getRequestResources', () => {
       },
     };
 
-    const articles2 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
+    const articles2 = getRequestResources(ref, schema, { ...state }, 'articles', 'request_1');
     expect(articles1 === articles2).toBeFalsy();
   });
 
   it('should be unmemoize when article is added into request list ids', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
+    const articles1 = getRequestResources(ref, schema, { ...state }, 'articles', 'request_1');
 
     state.articles = {
       ...state.articles,
@@ -159,14 +159,14 @@ describe('getRequestResources', () => {
       },
     };
 
-    const articles2 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
+    const articles2 = getRequestResources(ref, schema, { ...state }, 'articles', 'request_1');
     expect(articles1 === articles2).toBeFalsy();
   });
 
   it('should include resource works', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getRequestResources(ref, config, { ...state }, 'articles', 'request_1');
+    const articles1 = getRequestResources(ref, schema, { ...state }, 'articles', 'request_1');
 
     expect(articles1[1].comments).toHaveLength(2);
   });

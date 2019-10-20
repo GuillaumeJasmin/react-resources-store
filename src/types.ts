@@ -63,12 +63,12 @@ export type Resolver = (...args: any) => {
 }
 
 export interface ContextValue<Resources = any> {
-  config: ReducersConfig,
+  schema: Schema,
   resolver: Resolver,
   store: Store<StoreState<Resources>>;
 }
 
-export interface ReducersConfig {
+export interface Schema {
   [resourceType: string]: {
     [relationKey: string]: {
       resourceType: string,
@@ -85,7 +85,7 @@ export interface IncludedResourceParams {
 export type FetchPolicy =
   | 'cache-first'
   | 'cache-and-network'
-  | 'network-only' // network-only not already supported
+  | 'network-only'
   | 'cache-only';
 
 export interface Options {

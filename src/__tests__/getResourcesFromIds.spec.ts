@@ -1,7 +1,7 @@
-import { StoreState, ReducersConfig } from '../types';
+import { StoreState, Schema } from '../types';
 import { getResourcesFromIds } from '../getResourcesFromIds';
 
-const config: ReducersConfig = {
+const schema: Schema = {
   articles: {
     comments: {
       resourceType: 'comments',
@@ -67,14 +67,14 @@ describe('getResourcesFromIds', () => {
   it('should return correct resource length', () => {
     const ref = { current: null };
     const state = getState();
-    const articles = getResourcesFromIds(ref, config, state, 'articles', ['article_1', 'article_2']);
+    const articles = getResourcesFromIds(ref, schema, state, 'articles', ['article_1', 'article_2']);
     expect(articles).toHaveLength(2);
   });
 
   it('should return correct resources order', () => {
     const ref = { current: null };
     const state = getState();
-    const articles = getResourcesFromIds(ref, config, state, 'articles', ['article_2', 'article_1']);
+    const articles = getResourcesFromIds(ref, schema, state, 'articles', ['article_2', 'article_1']);
     expect(articles[0].id).toEqual('article_2');
     expect(articles[1].id).toEqual('article_1');
   });
@@ -82,16 +82,16 @@ describe('getResourcesFromIds', () => {
   it('should be memoize when there is no changes', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, state, 'articles', ['article_1', 'article_2']);
+    const articles1 = getResourcesFromIds(ref, schema, state, 'articles', ['article_1', 'article_2']);
     const newState = { ...state };
-    const articles2 = getResourcesFromIds(ref, config, newState, 'articles', ['article_1', 'article_2']);
+    const articles2 = getResourcesFromIds(ref, schema, newState, 'articles', ['article_1', 'article_2']);
     expect(articles1 === articles2).toBeTruthy();
   });
 
   it('should be memoize where items not present into request ids are added or updated', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, state, 'articles', ['article_1', 'article_2']);
+    const articles1 = getResourcesFromIds(ref, schema, state, 'articles', ['article_1', 'article_2']);
 
     const newState = {
       ...state,
@@ -111,14 +111,14 @@ describe('getResourcesFromIds', () => {
       },
     };
 
-    const articles2 = getResourcesFromIds(ref, config, newState, 'articles', ['article_1', 'article_2']);
+    const articles2 = getResourcesFromIds(ref, schema, newState, 'articles', ['article_1', 'article_2']);
     expect(articles1 === articles2).toBeTruthy();
   });
 
   it('should be unmemoize when item into list ids is updated', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, state, 'articles', ['article_1', 'article_2']);
+    const articles1 = getResourcesFromIds(ref, schema, state, 'articles', ['article_1', 'article_2']);
 
     const newState = {
       ...state,
@@ -134,23 +134,23 @@ describe('getResourcesFromIds', () => {
       },
     };
 
-    const articles2 = getResourcesFromIds(ref, config, newState, 'articles', ['article_1', 'article_2']);
+    const articles2 = getResourcesFromIds(ref, schema, newState, 'articles', ['article_1', 'article_2']);
     expect(articles1 === articles2).toBeFalsy();
   });
 
   it('should be unmemoize when article is added into request list ids', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, { ...state }, 'articles', ['article_1', 'article_2']);
+    const articles1 = getResourcesFromIds(ref, schema, { ...state }, 'articles', ['article_1', 'article_2']);
     const newState = { ...state };
-    const articles2 = getResourcesFromIds(ref, config, newState, 'articles', ['article_1', 'article_2', 'article_3']);
+    const articles2 = getResourcesFromIds(ref, schema, newState, 'articles', ['article_1', 'article_2', 'article_3']);
     expect(articles1 === articles2).toBeFalsy();
   });
 
   it('should works with one resource', () => {
     const ref = { current: null };
     const state = getState();
-    const article1 = getResourcesFromIds(ref, config, state, 'articles', 'article_1');
+    const article1 = getResourcesFromIds(ref, schema, state, 'articles', 'article_1');
 
     expect(article1.name === 'article 1');
   });
@@ -160,7 +160,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('should works with one resource and included resources', () => {
     const ref = { current: null };
     const state = getState();
-    const article1 = getResourcesFromIds(ref, config, state, 'articles', 'article_1', {
+    const article1 = getResourcesFromIds(ref, schema, state, 'articles', 'article_1', {
       comments: true,
     });
 
@@ -170,7 +170,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('should works with list and included resources', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, state, 'articles', ['article_1', 'article_2'], {
+    const articles1 = getResourcesFromIds(ref, schema, state, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -180,7 +180,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('should works with list and included resources added', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, { ...state }, 'articles', ['article_1', 'article_2'], {
+    const articles1 = getResourcesFromIds(ref, schema, { ...state }, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -199,7 +199,7 @@ describe('getResourcesFromIds: included resources', () => {
       },
     };
 
-    const articles2 = getResourcesFromIds(ref, config, newState, 'articles', ['article_1', 'article_2'], {
+    const articles2 = getResourcesFromIds(ref, schema, newState, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -210,7 +210,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('should be unmemoize when comments is added into included resources', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, state, 'articles', ['article_1', 'article_2'], {
+    const articles1 = getResourcesFromIds(ref, schema, state, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -229,7 +229,7 @@ describe('getResourcesFromIds: included resources', () => {
       },
     };
 
-    const articles2 = getResourcesFromIds(ref, config, newState, 'articles', ['article_1', 'article_2'], {
+    const articles2 = getResourcesFromIds(ref, schema, newState, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -239,7 +239,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('should be unmemoize when comments is updated into included resources', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, state, 'articles', ['article_1', 'article_2'], {
+    const articles1 = getResourcesFromIds(ref, schema, state, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -257,7 +257,7 @@ describe('getResourcesFromIds: included resources', () => {
       },
     };
 
-    const articles2 = getResourcesFromIds(ref, config, newState, 'articles', ['article_1', 'article_2'], {
+    const articles2 = getResourcesFromIds(ref, schema, newState, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -267,7 +267,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('should be memoize with included resource without changes', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, state, 'articles', ['article_1', 'article_2'], {
+    const articles1 = getResourcesFromIds(ref, schema, state, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -275,7 +275,7 @@ describe('getResourcesFromIds: included resources', () => {
       ...state,
     };
 
-    const articles2 = getResourcesFromIds(ref, config, newState, 'articles', ['article_1', 'article_2'], {
+    const articles2 = getResourcesFromIds(ref, schema, newState, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -285,7 +285,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('should be memoize with changes outside included resources', () => {
     const ref = { current: null };
     const state = getState();
-    const articles1 = getResourcesFromIds(ref, config, { ...state }, 'articles', ['article_1', 'article_2'], {
+    const articles1 = getResourcesFromIds(ref, schema, { ...state }, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -304,7 +304,7 @@ describe('getResourcesFromIds: included resources', () => {
       },
     };
 
-    const articles2 = getResourcesFromIds(ref, config, newState, 'articles', ['article_1', 'article_2'], {
+    const articles2 = getResourcesFromIds(ref, schema, newState, 'articles', ['article_1', 'article_2'], {
       comments: true,
     });
 
@@ -314,7 +314,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('included resource belongsTo', () => {
     const ref = { current: null };
     const state = getState();
-    const comments = getResourcesFromIds(ref, config, state, 'comments', ['comment_1', 'comment_2'], {
+    const comments = getResourcesFromIds(ref, schema, state, 'comments', ['comment_1', 'comment_2'], {
       article: true,
     });
 
@@ -324,7 +324,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('should included resource with belongsTo relation be memoized', () => {
     const ref = { current: null };
     const state = getState();
-    const comments1 = getResourcesFromIds(ref, config, state, 'comments', ['comment_1', 'comment_2'], {
+    const comments1 = getResourcesFromIds(ref, schema, state, 'comments', ['comment_1', 'comment_2'], {
       article: true,
     });
 
@@ -332,7 +332,7 @@ describe('getResourcesFromIds: included resources', () => {
       ...state,
     };
 
-    const comments2 = getResourcesFromIds(ref, config, newState, 'comments', ['comment_1', 'comment_2'], {
+    const comments2 = getResourcesFromIds(ref, schema, newState, 'comments', ['comment_1', 'comment_2'], {
       article: true,
     });
 
@@ -342,7 +342,7 @@ describe('getResourcesFromIds: included resources', () => {
   it('should included resource with belongsTo relation be unmemoized if there is changes', () => {
     const ref = { current: null };
     const state = getState();
-    const comments1 = getResourcesFromIds(ref, config, state, 'comments', ['comment_1', 'comment_2'], {
+    const comments1 = getResourcesFromIds(ref, schema, state, 'comments', ['comment_1', 'comment_2'], {
       article: true,
     });
 
@@ -360,7 +360,7 @@ describe('getResourcesFromIds: included resources', () => {
       },
     };
 
-    const comments2 = getResourcesFromIds(ref, config, newState, 'comments', ['comment_1', 'comment_2'], {
+    const comments2 = getResourcesFromIds(ref, schema, newState, 'comments', ['comment_1', 'comment_2'], {
       article: true,
     });
 

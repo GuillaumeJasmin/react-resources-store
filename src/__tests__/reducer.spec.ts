@@ -1,9 +1,9 @@
 import { createReducers } from '../createReducers';
-import { ResourceState, ReducersConfig } from '../types';
+import { ResourceState, Schema } from '../types';
 import { KEY } from '../contants';
 import { getIncludedResourcesSchema } from '../getIncludedResourcesSchema';
 
-const config: ReducersConfig = {
+const schema: Schema = {
   articles: {
     comments: {
       resourceType: 'comments',
@@ -80,12 +80,12 @@ function getPlainData() {
 
 describe('createReducer', () => {
   it('should return a function', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
     expect(typeof reducer).toBe('function');
   });
 
   it('should throw if there is no type', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const action = {
       key: KEY,
@@ -95,7 +95,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer return default Resourcestate', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const action = {};
 
@@ -108,7 +108,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer handle UPDATE_PENDING type', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const action = {
       key: KEY,
@@ -134,7 +134,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer handle UPDATE_SUCCEEDED type with new resources', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const initialState: ResourceState = {
       resources: {
@@ -171,7 +171,7 @@ describe('createReducer', () => {
           requestKey: 'requestKey_1',
           status: 'SUCCEEDED',
           ids: ['article_2'],
-          includedResources: getIncludedResourcesSchema(config, 'articles', action.payload),
+          includedResources: getIncludedResourcesSchema(schema, 'articles', action.payload),
           isList: true,
         },
       },
@@ -181,7 +181,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer handle UPDATE_SUCCEEDED type with existed resources', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const initialState: ResourceState = {
       resources: {
@@ -225,7 +225,7 @@ describe('createReducer', () => {
           requestKey: 'requestKey_1',
           status: 'SUCCEEDED',
           ids: ['article_2'],
-          includedResources: getIncludedResourcesSchema(config, 'articles', action.payload),
+          includedResources: getIncludedResourcesSchema(schema, 'articles', action.payload),
           isList: true,
         },
       },
@@ -235,7 +235,7 @@ describe('createReducer', () => {
   });
 
   it('should request.isList be false', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const initialState: ResourceState = {
       resources: {},
@@ -269,7 +269,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer handle UPDATE_SUCCEEDED type with nested resources', () => {
-    const reducers = createReducers(config);
+    const reducers = createReducers(schema);
     const reducerArticles = reducers.articles;
     const reducerComments = reducers.comments;
     const reducerUsers = reducers.users;
@@ -309,7 +309,7 @@ describe('createReducer', () => {
           requestKey: 'requestKey_1',
           status: 'SUCCEEDED',
           ids: ['article_1', 'article_2'],
-          includedResources: getIncludedResourcesSchema(config, 'articles', action.payload),
+          includedResources: getIncludedResourcesSchema(schema, 'articles', action.payload),
           isList: true,
         },
       },
@@ -344,7 +344,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer handle UPDATE_FAILED', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const initialState: ResourceState = {
       resources: {
@@ -388,7 +388,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer handle DELETE_PENDING type', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const initialState: ResourceState = {
       resources: {
@@ -424,7 +424,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer handle DELETE_SUCCEEDED type', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const initialState: ResourceState = {
       resources: {
@@ -461,7 +461,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer handle DELETE_FAILED type', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const initialState: ResourceState = {
       resources: {
@@ -499,7 +499,7 @@ describe('createReducer', () => {
   });
 
   it('should reducer skip action if key doesn\'t match', () => {
-    const reducer = createReducers(config).articles;
+    const reducer = createReducers(schema).articles;
 
     const initialState: ResourceState = {
       resources: {},

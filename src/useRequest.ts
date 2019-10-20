@@ -19,22 +19,25 @@ type UseRequestOutput<Data = any> = [
   Data,
   {
     loading: boolean, // loading is false is there is data from cache
-    requestPending: boolean
+    requestPending: boolean,
+    refetch: () => void
   }
 ]
 
-export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOutput {
+export function useRequest(requestArgs: any, options: Options = {}): UseRequestOutput {
   const { resolver, store, config } = useContext(Context);
   const isMountedRef = useRef(false);
   const isMounted = isMountedRef.current;
+  // const [requestIsPending, setRequestIsPending] = useState(false);
   const refSelector = useRef(null);
   const refData = useRef(null);
-  const requestPendingRef = useRef(true);
+  const requestPendingRef = useRef(false);
   const [, forceUpdate] = useState(Date.now());
 
   const metadata = {
     loading: false,
     requestPending: false,
+    refetch: () => {},
   };
 
   const fetchPolicy = options.fetchPolicy || 'cache-first';
@@ -46,7 +49,7 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
     request: triggerRequest,
     resourceType,
     // resourceId,
-  } = resolver(fetchArgs);
+  } = resolver(requestArgs);
 
   const allowCache = (
     fetchPolicy === 'cache-first'
@@ -69,9 +72,11 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
   const forceNetwork = fetchPolicy === 'cache-and-network' || fetchPolicy === 'network-only';
   const enableNetwork = allowNetwork && (forceNetwork || !requestExist);
 
-  if (!isMounted && enableNetwork) {
-    metadata.requestPending = true;
-  }
+  // if (!isMounted && enableNetwork) {
+  //   metadata.requestPending = true;
+  // }
+
+  metadata.requestPending = (!isMounted && enableNetwork) || requestPendingRef.current;
 
   if (!isMounted && !enableCache) {
     metadata.loading = true;
@@ -99,8 +104,9 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
       resourceType,
     };
 
-    triggerRequest(
+    return triggerRequest(
       (succeededData) => {
+        // setRequestIsPending(false);
         requestPendingRef.current = false;
         store.dispatch({
           ...action,
@@ -109,6 +115,7 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
         });
       },
       (/* failedData */) => {
+        // setRequestIsPending(false);
         requestPendingRef.current = false;
         store.dispatch({
           ...action,
@@ -117,6 +124,13 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
       },
     );
   }, [method, requestHash, resourceType, triggerRequest, store]);
+
+  metadata.refetch = useCallback(() => {
+    requestPendingRef.current = true;
+    forceUpdate(Date.now());
+
+    return fetch();
+  }, [fetch]);
 
   useMount(() => {
     isMountedRef.current = true;

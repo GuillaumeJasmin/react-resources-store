@@ -37,7 +37,7 @@ export function createFetchMockResolver(fetch: any) {
       resourceId,
       params: queryParams,
       request: (succeeded: SucceededFn, failed: FailedFn) => {
-        fetch(url, fetchConfig)
+        return fetch(url, fetchConfig)
           .then((response: any) => {
             succeeded({
               raw: response,

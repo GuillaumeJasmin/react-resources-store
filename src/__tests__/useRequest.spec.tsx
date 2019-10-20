@@ -9,6 +9,10 @@ import { createFetchMockResolver } from '../resolvers/mockResolver';
 import { createReducers } from '../createReducers';
 import { useRequest } from '../useRequest';
 
+function timeout(delay = 1000) {
+  return new Promise((resolve: any) => setTimeout(resolve, delay));
+}
+
 async function waitNextUpdateShouldNotAppear(testWaitForNextUpdate: any, timeout = 3000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -77,12 +81,12 @@ function getFakeState() {
 }
 
 function getFakeFetch(output: any = undefined) {
-  return jest.fn(() => {
-    const stream = {
+  return jest.fn(async () => {
+    await timeout(500);
+
+    return {
       json: () => output,
     };
-
-    return Promise.resolve(stream);
   });
 }
 
@@ -169,52 +173,35 @@ describe('useRequest', () => {
     expect(useRequestFn).toBeCalledTimes(1);
   });
 
-  // it('fetchPolicy: cache-first - with cache - refetch', async () => {
-  //   const { wrapper, fakeFetch } = getWrapper();
+  it('fetchPolicy: cache-first - with cache - refetch', async () => {
+    const { wrapper, fakeFetch } = getWrapper();
 
-  //   const useRequestFn = jest.fn(useRequest);
+    const useRequestFn = jest.fn(useRequest);
 
-  //   const { result, waitForNextUpdate } = renderHook(() => {
-  //     return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'cache-first' });
-  //   }, { wrapper });
+    const { result, waitForNextUpdate } = renderHook(() => {
+      return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'cache-first' });
+    }, { wrapper });
 
-  //   const returnExpected = [
-  //     [{
-  //       id: 'article_1',
-  //       name: 'Artice 1',
-  //     }],
-  //     {
-  //       loading: false,
-  //       requestPending: false,
-  //     },
-  //   ];
-  //   expect(result.current).toEqual(returnExpected);
+    expect(result.current[0]).toEqual([{
+      id: 'article_1',
+      name: 'Artice 1',
+    }]);
+    expect(result.current[1].loading).toBe(false);
+    expect(result.current[1].requestPending).toBe(false);
 
-  //   await act(async () => {
-  //     await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
-  //   });
+    await act(async () => {
+      result.current[1].refetch();
+      expect(result.current[1].loading).toBe(false);
+      expect(result.current[1].requestPending).toBe(true);
+      await waitForNextUpdate();
+      expect(result.current[1].loading).toBe(false);
+      expect(result.current[1].requestPending).toBe(false);
+      await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
+    });
 
-  //   expect(fakeFetch).toBeCalledTimes(0);
-  //   expect(useRequestFn).toBeCalledTimes(1);
-
-  //   // const returnExpectedRefetch = [
-  //   //   [{
-  //   //     id: 'article_1',
-  //   //     name: 'Artice 1',
-  //   //   }],
-  //   //   {
-  //   //     loading: false,
-  //   //     requestPending: false,
-  //   //   },
-  //   // ];
-
-  //   // await act(async () => {
-  //   //   result.current[1].refetch();
-  //   //   await waitForNextUpdate();
-  //   //   expect(result.current)
-  //   //   // await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
-  //   // });
-  // });
+    expect(fakeFetch).toBeCalledTimes(1);
+    expect(useRequestFn).toBeCalledTimes(3);
+  });
 
   it('fetchPolicy: cache-first - without cache', async () => {
     const store = getFakeStore();
@@ -324,13 +311,19 @@ describe('useRequest', () => {
       ]);
       expect(result.current[1].loading).toBe(false);
       expect(result.current[1].requestPending).toBe(false);
+      result.current[1].refetch();
+      expect(result.current[1].loading).toBe(false);
+      expect(result.current[1].requestPending).toBe(true);
+      await waitForNextUpdate();
+      expect(result.current[1].loading).toBe(false);
+      expect(result.current[1].requestPending).toBe(false);
       await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
     });
 
-    expect(fakeFetch).toBeCalledTimes(1);
+    expect(fakeFetch).toBeCalledTimes(2);
 
     // currently call 2 times, but we should improve it and make a deep compare before dispatch server response
-    expect(useRequestFn).toBeCalledTimes(2);
+    expect(useRequestFn).toBeCalledTimes(4);
   });
 
   it('fetchPolicy: network-only', async () => {

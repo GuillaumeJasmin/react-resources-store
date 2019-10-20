@@ -18,23 +18,24 @@ const methodsToType = {
 type UseRequestOutput<Data = any> = [
   Data,
   {
+    requestKey: string,
     loading: boolean, // loading is false is there is data from cache
     requestPending: boolean,
     refetch: () => void
   }
 ]
 
-export function useRequest(requestArgs: any, options: Options = {}): UseRequestOutput {
+export function useRequest<Data = any>(requestArgs: any, options: Options = {}): UseRequestOutput<Data> {
   const { resolver, store, config } = useContext(Context);
   const isMountedRef = useRef(false);
   const isMounted = isMountedRef.current;
-  // const [requestIsPending, setRequestIsPending] = useState(false);
   const refSelector = useRef(null);
-  const refData = useRef(null);
+  const refData = useRef<any>(null);
   const requestPendingRef = useRef(false);
   const [, forceUpdate] = useState(Date.now());
 
   const metadata = {
+    requestKey: '',
     loading: false,
     requestPending: false,
     refetch: () => {},
@@ -48,7 +49,6 @@ export function useRequest(requestArgs: any, options: Options = {}): UseRequestO
     params,
     request: triggerRequest,
     resourceType,
-    // resourceId,
   } = resolver(requestArgs);
 
   const allowCache = (
@@ -72,11 +72,8 @@ export function useRequest(requestArgs: any, options: Options = {}): UseRequestO
   const forceNetwork = fetchPolicy === 'cache-and-network' || fetchPolicy === 'network-only';
   const enableNetwork = allowNetwork && (forceNetwork || !requestExist);
 
-  // if (!isMounted && enableNetwork) {
-  //   metadata.requestPending = true;
-  // }
-
   metadata.requestPending = (!isMounted && enableNetwork) || requestPendingRef.current;
+  metadata.requestKey = requestHash;
 
   if (!isMounted && !enableCache) {
     metadata.loading = true;

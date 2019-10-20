@@ -25,6 +25,8 @@ type UseRequestOutput<Data = any> = [
 
 export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOutput {
   const { resolver, store, config } = useContext(Context);
+  const isMountedRef = useRef(false);
+  const isMounted = isMountedRef.current;
   const refSelector = useRef(null);
   const refData = useRef(null);
   const requestPendingRef = useRef(true);
@@ -46,24 +48,36 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
     // resourceId,
   } = resolver(fetchArgs);
 
+  const allowCache = (
+    fetchPolicy === 'cache-first'
+    || fetchPolicy === 'cache-and-network'
+    || fetchPolicy === 'cache-only'
+  );
+
+  const allowNetwork = (
+    fetchPolicy === 'cache-first'
+    || fetchPolicy === 'cache-and-network'
+    || fetchPolicy === 'network-only'
+  );
+
   const requestHash = getRequestHash(url, method, params);
-
   const request = getRequest(store.getState(), resourceType, requestHash);
-  const requestIsCached = !!request;
+  const requestExist = !!request;
+  const requestIsCached = allowCache && !!request;
 
-  if (
-    (fetchPolicy === 'cache-first' && !requestIsCached)
-    || (fetchPolicy === 'network-only' && requestPendingRef.current)
-    || (fetchPolicy === 'cache-and-network' && requestPendingRef.current)
-  ) {
+  const enableCache = allowCache && (requestExist || fetchPolicy === 'cache-only');
+  const forceNetwork = fetchPolicy === 'cache-and-network' || fetchPolicy === 'network-only';
+  const enableNetwork = allowNetwork && (forceNetwork || !requestExist);
+
+  if (!isMounted && enableNetwork) {
     metadata.requestPending = true;
   }
 
-  if (metadata.requestPending && (fetchPolicy === 'network-only' || !requestIsCached)) {
+  if (!isMounted && !enableCache) {
     metadata.loading = true;
   }
 
-  if (request && !(fetchPolicy === 'network-only' && requestPendingRef.current)) {
+  if (!metadata.loading) {
     refData.current = getRequestResources(
       refSelector,
       config,
@@ -105,6 +119,8 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
   }, [method, requestHash, resourceType, triggerRequest, store]);
 
   useMount(() => {
+    isMountedRef.current = true;
+
     const isGet = method.toUpperCase() === 'GET';
     if (isGet) {
       store.subscribe(() => {

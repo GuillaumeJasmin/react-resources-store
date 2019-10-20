@@ -18,7 +18,8 @@ const methodsToType = {
 type UseRequestOutput<Data = any> = [
   Data,
   {
-    pending: boolean
+    loading: boolean, // loading is false is there is data from cache
+    requestPending: boolean
   }
 ]
 
@@ -30,7 +31,8 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
   const [, forceUpdate] = useState(Date.now());
 
   const metadata = {
-    pending: false,
+    loading: false,
+    requestPending: false,
   };
 
   const fetchPolicy = options.fetchPolicy || 'cache-first';
@@ -49,22 +51,32 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
   const request = getRequest(store.getState(), resourceType, requestHash);
   const requestIsCached = !!request;
 
-  if (fetchPolicy === 'cache-first' && !requestIsCached) {
-    metadata.pending = true;
+  if (
+    (fetchPolicy === 'cache-first' && !requestIsCached)
+    || (fetchPolicy === 'network-only' && requestPendingRef.current)
+    || (fetchPolicy === 'cache-and-network' && requestPendingRef.current)
+  ) {
+    metadata.requestPending = true;
   }
 
-  if (fetchPolicy === 'network-only' && requestPendingRef.current) {
-    metadata.pending = true;
+  if (metadata.requestPending && (fetchPolicy === 'network-only' || !requestIsCached)) {
+    metadata.loading = true;
   }
 
   if (request && !(fetchPolicy === 'network-only' && requestPendingRef.current)) {
-    refData.current = getRequestResources(refSelector, config, store.getState(), resourceType, requestHash, options.includedResources);
+    refData.current = getRequestResources(
+      refSelector,
+      config,
+      store.getState(),
+      resourceType,
+      requestHash,
+      options.includedResources,
+    );
   }
 
   const fetch = useCallback(() => {
     // @ts-ignore
     const type = methodsToType[method.toUpperCase()];
-    // const pendingType = `${type}_PENDING`;
     const succeededType = `${type}_SUCCEEDED`;
     const failedType = `${type}_FAILED`;
     const action = {
@@ -72,13 +84,6 @@ export function useRequest(fetchArgs: any, options: Options = {}): UseRequestOut
       requestKey: requestHash,
       resourceType,
     };
-
-    // if (dispatchPending) {
-    //   store.dispatch({
-    //     ...action,
-    //     type: pendingType,
-    //   });
-    // }
 
     triggerRequest(
       (succeededData) => {

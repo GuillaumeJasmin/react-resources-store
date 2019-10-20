@@ -22,7 +22,7 @@ async function waitNextUpdateShouldNotAppear(testWaitForNextUpdate: any, timeout
   });
 }
 
-function getDefaultRequestArgs() {
+function getRequestArgsCached() {
   const url = 'http://website.com/articles?pageSize=10';
   const method = 'GET';
   const params = {
@@ -36,8 +36,22 @@ function getDefaultRequestArgs() {
   };
 }
 
+function getRequestArgsNotCached() {
+  const url = 'http://website.com/articles?pageSize=20';
+  const method = 'GET';
+  const params = {
+    pageSize: '20',
+  };
+
+  return {
+    url,
+    method,
+    params,
+  };
+}
+
 function getFakeState() {
-  const { url, method, params } = getDefaultRequestArgs();
+  const { url, method, params } = getRequestArgsCached();
 
   const requestKey = getRequestHash(url, method, params);
 
@@ -62,10 +76,10 @@ function getFakeState() {
   };
 }
 
-function getFakeFetch() {
+function getFakeFetch(output: any = undefined) {
   return jest.fn(() => {
     const stream = {
-      json: () => {},
+      json: () => output,
     };
 
     return Promise.resolve(stream);
@@ -126,7 +140,7 @@ describe('useRequest', () => {
   it('should return an array', () => {
     const { wrapper } = getWrapper();
 
-    const { result } = renderHook(() => useRequest({ ...getDefaultRequestArgs() }), { wrapper });
+    const { result } = renderHook(() => useRequest({ ...getRequestArgsCached() }), { wrapper });
 
     expect(result.current).toBeInstanceOf(Array);
   });
@@ -137,7 +151,7 @@ describe('useRequest', () => {
     const useRequestFn = jest.fn(useRequest);
 
     const { result, waitForNextUpdate } = renderHook(() => {
-      return useRequestFn({ ...getDefaultRequestArgs() }, { fetchPolicy: 'cache-first' });
+      return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'cache-first' });
     }, { wrapper });
 
     const returnExpected = [
@@ -146,7 +160,8 @@ describe('useRequest', () => {
         name: 'Artice 1',
       }],
       {
-        pending: false,
+        loading: false,
+        requestPending: false,
       },
     ];
     expect(result.current).toEqual(returnExpected);
@@ -160,40 +175,38 @@ describe('useRequest', () => {
   });
 
   it('fetchPolicy: cache-first - without cache', async () => {
-    const requestArgs = {
-      url: 'http://website.com/articles?pageSize=20',
-      method: 'GET',
-    };
-
     const store = getFakeStore();
-
-    const fakeFetch = jest.fn(() => {
-      return Promise.resolve({
-        json: () => [
-          {
-            id: 'article_1',
-            name: 'Artice 1',
-          },
-        ],
-      });
-    });
+    const fakeFetch = getFakeFetch([
+      {
+        id: 'article_1',
+        name: 'Artice 1',
+      },
+    ]);
 
     const { wrapper } = getWrapper({ fakeFetch, store });
 
     const useRequestFn = jest.fn(useRequest);
 
     const { result, waitForNextUpdate } = renderHook(() => {
-      return useRequestFn({ ...requestArgs }, { fetchPolicy: 'cache-first' });
+      return useRequestFn({ ...getRequestArgsNotCached() }, { fetchPolicy: 'cache-first' });
     }, { wrapper });
 
-    const firstReturnExpected = [null, { pending: true }];
+    const firstReturnExpected = [
+      null,
+      {
+        loading: true,
+        requestPending: true,
+      },
+    ];
+
     const secondReturnExpected = [
       [{
         id: 'article_1',
         name: 'Artice 1',
       }],
       {
-        pending: false,
+        loading: false,
+        requestPending: false,
       },
     ];
 
@@ -210,77 +223,42 @@ describe('useRequest', () => {
   });
 
   it('fetchPolicy: cache-and-network - with cache', async () => {
-    const fakeFetch = jest.fn(() => {
-      return Promise.resolve({
-        json: () => [
-          {
-            id: 'article_1',
-            name: 'Artice 1',
-          },
-        ],
-      });
-    });
+    const fakeFetch = getFakeFetch([
+      {
+        id: 'article_1',
+        name: 'Artice 1',
+      },
+    ]);
 
     const { wrapper } = getWrapper({ fakeFetch });
 
     const useRequestFn = jest.fn(useRequest);
 
     const { result, waitForNextUpdate } = renderHook(() => {
-      return useRequestFn({ ...getDefaultRequestArgs() }, { fetchPolicy: 'cache-and-network' });
+      return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'cache-and-network' });
     }, { wrapper });
 
-    const returnExpected = [
+    const firstReturnExpected = [
       [{
         id: 'article_1',
         name: 'Artice 1',
       }],
       {
-        pending: false,
+        loading: false,
+        requestPending: true,
       },
     ];
 
-    expect(result.current).toEqual(returnExpected);
-
-    await act(async () => {
-      await waitForNextUpdate();
-      expect(result.current).toEqual(returnExpected);
-      await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
-    });
-
-    expect(fakeFetch).toBeCalledTimes(1);
-
-    // currently call 2 times, but we should improve it and make a deep compare before dispatch server response
-    expect(useRequestFn).toBeCalledTimes(2);
-  });
-
-  it('fetchPolicy: network-only', async () => {
-    const fakeFetch = jest.fn(() => {
-      return Promise.resolve({
-        json: () => [
-          {
-            id: 'article_1',
-            name: 'Artice 1',
-          },
-        ],
-      });
-    });
-
-    const { wrapper } = getWrapper({ fakeFetch });
-
-    const useRequestFn = jest.fn(useRequest);
-
-    const { result, waitForNextUpdate } = renderHook(() => {
-      return useRequestFn({ ...getDefaultRequestArgs() }, { fetchPolicy: 'network-only' });
-    }, { wrapper });
-
-    const firstReturnExpected = [null, { pending: true }];
     const secondReturnExpected = [
-      [{
-        id: 'article_1',
-        name: 'Artice 1',
-      }],
+      [
+        {
+          id: 'article_1',
+          name: 'Artice 1',
+        },
+      ],
       {
-        pending: false,
+        loading: false,
+        requestPending: false,
       },
     ];
 
@@ -292,25 +270,160 @@ describe('useRequest', () => {
       await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
     });
 
+    expect(fakeFetch).toBeCalledTimes(1);
+
+    // currently call 2 times, but we should improve it and make a deep compare before dispatch server response
+    expect(useRequestFn).toBeCalledTimes(2);
+  });
+
+  it('fetchPolicy: cache-and-network - without cache', async () => {
+    const fakeFetch = getFakeFetch([
+      {
+        id: 'article_1',
+        name: 'Artice 1',
+      },
+    ]);
+
+    const { wrapper } = getWrapper({ fakeFetch });
+
+    const useRequestFn = jest.fn(useRequest);
+
+    const { result, waitForNextUpdate } = renderHook(() => {
+      return useRequestFn({ ...getRequestArgsNotCached() }, { fetchPolicy: 'cache-and-network' });
+    }, { wrapper });
+
+    const firstReturnExpected = [
+      null,
+      {
+        loading: true,
+        requestPending: true,
+      },
+    ];
+
+    const secondReturnExpected = [
+      [
+        {
+          id: 'article_1',
+          name: 'Artice 1',
+        },
+      ],
+      {
+        loading: false,
+        requestPending: false,
+      },
+    ];
+
+    expect(result.current).toEqual(firstReturnExpected);
+
+    await act(async () => {
+      await waitForNextUpdate();
+      expect(result.current).toEqual(secondReturnExpected);
+      await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
+    });
+
+    expect(fakeFetch).toBeCalledTimes(1);
+
+    // currently call 2 times, but we should improve it and make a deep compare before dispatch server response
+    expect(useRequestFn).toBeCalledTimes(2);
+  });
+
+  it('fetchPolicy: network-only', async () => {
+    const fakeFetch = getFakeFetch([
+      {
+        id: 'article_1',
+        name: 'Artice 1',
+      },
+    ]);
+
+    const { wrapper } = getWrapper({ fakeFetch });
+
+    const useRequestFn = jest.fn(useRequest);
+
+    const { result, waitForNextUpdate } = renderHook(() => {
+      return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'network-only' });
+    }, { wrapper });
+
+    const firstReturnExpected = [
+      null,
+      {
+        loading: true,
+        requestPending: true,
+      },
+    ];
+    const secondReturnExpected = [
+      [
+        {
+          id: 'article_1',
+          name: 'Artice 1',
+        },
+      ],
+      {
+        loading: false,
+        requestPending: false,
+      },
+    ];
+
+    expect(result.current).toEqual(firstReturnExpected);
+
+    // leave rthis console.log to debug when test failed (bug hard to reproduce)
+    // eslint-disable-next-line
+    console.log('firstReturnExpected', result.current);
+
+    await act(async () => {
+      await waitForNextUpdate();
+      expect(result.current).toEqual(secondReturnExpected);
+      await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
+    });
+
     expect(useRequestFn).toHaveBeenCalledTimes(2);
   });
 
-  it('fetchPolicy: cache-only', async () => {
+  it('fetchPolicy: cache-only - with cache', async () => {
     const { wrapper, fakeFetch } = getWrapper();
 
     const useRequestFn = jest.fn(useRequest);
 
     const { result, waitForNextUpdate } = renderHook(() => {
-      return useRequestFn({ ...getDefaultRequestArgs() }, { fetchPolicy: 'cache-only' });
+      return useRequestFn({ ...getRequestArgsCached() }, { fetchPolicy: 'cache-only' });
     }, { wrapper });
 
     const returnExpected = [
-      [{
-        id: 'article_1',
-        name: 'Artice 1',
-      }],
+      [
+        {
+          id: 'article_1',
+          name: 'Artice 1',
+        },
+      ],
       {
-        pending: false,
+        loading: false,
+        requestPending: false,
+      },
+    ];
+
+    expect(result.current).toEqual(returnExpected);
+
+    await act(async () => {
+      await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
+    });
+
+    expect(fakeFetch).toBeCalledTimes(0);
+    expect(useRequestFn).toBeCalledTimes(1);
+  });
+
+  it('fetchPolicy: cache-only - without cache', async () => {
+    const { wrapper, fakeFetch } = getWrapper();
+
+    const useRequestFn = jest.fn(useRequest);
+
+    const { result, waitForNextUpdate } = renderHook(() => {
+      return useRequestFn({ ...getRequestArgsNotCached() }, { fetchPolicy: 'cache-only' });
+    }, { wrapper });
+
+    const returnExpected = [
+      null,
+      {
+        loading: false,
+        requestPending: false,
       },
     ];
 

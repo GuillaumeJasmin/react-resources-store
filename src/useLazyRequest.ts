@@ -24,7 +24,7 @@ type UseLazyRequestOutput<Data, Params> = [
 
 type RequestArgs<Params> = object | ((params: Params) => object);
 
-export function useLazyRequest<Params = any, Data = any>(
+export function useLazyRequest<Params = void, Data = void>(
   requestArgs: RequestArgs<Params>,
   options: Options = {},
 ): UseLazyRequestOutput<Data, Params> {

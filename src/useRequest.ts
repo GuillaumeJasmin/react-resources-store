@@ -26,7 +26,7 @@ type UseRequestOutput<Data = any> = [
 ]
 
 export function useRequest<Data = any>(requestArgs: any, options: Options = {}): UseRequestOutput<Data> {
-  const { resolver, store, config } = useContext(Context);
+  const { resolver, store, schema } = useContext(Context);
   const isMountedRef = useRef(false);
   const isMounted = isMountedRef.current;
   const refSelector = useRef(null);
@@ -82,7 +82,7 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
   if (!metadata.loading) {
     refData.current = getRequestResources(
       refSelector,
-      config,
+      schema,
       store.getState(),
       resourceType,
       requestHash,
@@ -135,7 +135,7 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
     const isGet = method.toUpperCase() === 'GET';
     if (isGet) {
       store.subscribe(() => {
-        const nextData = getRequestResources(refSelector, config, store.getState(), resourceType, requestHash);
+        const nextData = getRequestResources(refSelector, schema, store.getState(), resourceType, requestHash, options.includedResources);
         if (refData.current !== nextData) {
           forceUpdate(Date.now());
         }

@@ -53,6 +53,10 @@ export function getResourcesFromIds(
 
         if (includedResources) {
           Object.entries(includedResources).forEach(([relationResourceKey, includedResourceValue]) => {
+            if (!config[resourceType][relationResourceKey]) {
+              throw new Error(`relation ${relationResourceKey} dosen't exist`);
+            }
+
             const relationConfig = config[resourceType][relationResourceKey];
             const {
               resourceType: relationResourceType,

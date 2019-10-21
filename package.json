@@ -7,6 +7,7 @@
   "scripts": {
     "build": "run-s clean test build:*",
     "build:main": "tsc -p tsconfig.json",
+    "build:main:link": "run-s build && rm -rf node_modules && npm install --only=prod",
     "test": "run-s test:*",
     "test:eslint": "npx eslint --ext .tsx --ext .ts src/",
     "test:jest": "npx jest --env=jsdom --verbose ",
@@ -28,6 +29,7 @@
   "dependencies": {
     "lodash": "^4.17.15",
     "normalizr": "^3.4.1",
+    "redux": "^4.0.4",
     "reselect": "^4.0.0"
   },
   "devDependencies": {
@@ -55,7 +57,6 @@
     "react": "^16.10.2",
     "react-dom": "^16.10.2",
     "react-test-renderer": "^16.10.2",
-    "redux": "^4.0.4",
     "ts-jest": "^24.1.0",
     "typescript": "^3.6.3"
   }

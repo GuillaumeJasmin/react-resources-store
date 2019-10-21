@@ -12,23 +12,20 @@ function createLocalStore(schema: ContextValue['schema']) {
   return createStore(reducers);
 }
 
-interface ContextValueProps {
+interface Props {
   schema: ContextValue['schema']
   store?: ContextValue['store']
   resolver: ContextValue['resolver']
-}
-
-interface Props {
-  value: ContextValueProps;
   children: any;
 }
 
 export function Provider(props: Props) {
-  const { value, children } = props;
+  const { schema, store, resolver, children } = props;
 
   const providerValue = {
-    store: createLocalStore(value.schema),
-    ...value,
+    store: store || createLocalStore(schema),
+    schema,
+    resolver,
   };
 
   return (

@@ -20,7 +20,9 @@ export function getRequestResources(
     return null;
   }
 
-  const { includedResources, ids, isList } = request;
+  const { ids, isList } = request;
+
+  const includedResources = includedResourcesParams || request.includedResources;
 
   const idsParams = isList
     ? ids
@@ -32,9 +34,6 @@ export function getRequestResources(
     state,
     resourceType,
     idsParams,
-    {
-      ...includedResources,
-      ...includedResourcesParams,
-    },
+    includedResources,
   );
 }

@@ -8,6 +8,7 @@ import { getRequestHash } from '../getRequestHash';
 import { createFetchMockResolver } from './mockResolver';
 import { createReducers } from '../createReducers';
 import { useRequest } from '../useRequest';
+import { Schema } from '../types';
 
 function timeout(delay = 1000) {
   return new Promise((resolve: any) => setTimeout(resolve, delay));
@@ -90,15 +91,11 @@ function getFakeFetch(output: any = undefined) {
   });
 }
 
-function getFakeStore() {
-  const resourcesConfig = {
-    articles: {},
-  };
-
-  const reducers = createReducers(resourcesConfig);
+function getFakeStore(schema: Schema = { articles: {} }, fakeState: any = getFakeState()) {
+  const reducers = createReducers(schema);
 
   // @ts-ignore
-  const store = createStore(combineReducers(reducers), getFakeState());
+  const store = createStore(combineReducers(reducers), fakeState);
 
   return store;
 }
@@ -118,14 +115,12 @@ function getWrapper(options = {}) {
       articles: {},
     };
 
-    const providerValue: any = {
-      schema,
-      resolver: createFetchMockResolver(fakeFetch),
-      store,
-    };
-
     return (
-      <Provider value={providerValue}>
+      <Provider
+        schema={schema}
+        resolver={createFetchMockResolver(fakeFetch)}
+        store={store}
+      >
         {children}
       </Provider>
     );
@@ -346,10 +341,6 @@ describe('useRequest', () => {
     expect(result.current[1].loading).toBe(true);
     expect(result.current[1].requestPending).toBe(true);
 
-    // leave rthis console.log to debug when test failed (bug hard to reproduce)
-    // eslint-disable-next-line
-    console.log('firstReturnExpected', result.current);
-
     await act(async () => {
       await waitForNextUpdate();
       expect(result.current[0]).toEqual([
@@ -411,5 +402,93 @@ describe('useRequest', () => {
 
     expect(fakeFetch).toBeCalledTimes(0);
     expect(useRequestFn).toBeCalledTimes(1);
+  });
+
+  it('should work with relation schema', async () => {
+    const schema: Schema = {
+      articles: {
+        comments: {
+          resourceType: 'comments',
+          relationType: 'hasMany',
+          foreignKey: 'articleId',
+        },
+      },
+      comments: {
+        article: {
+          resourceType: 'articles',
+          relationType: 'hasOne',
+          foreignKey: 'articleId',
+        },
+      },
+    };
+
+    const store = getFakeStore(schema, {
+      articles: {
+        resources: {},
+        requests: {},
+      },
+      comments: {
+        resources: {},
+        requests: {},
+      },
+    });
+
+    const wrapper = ({ children }: any) => {
+      const fetchOutput = [
+        {
+          id: 'article_2',
+          name: 'article_2',
+          comments: [
+            {
+              id: 'comment_1',
+              name: 'comment 1',
+              articleId: 'article_2',
+            },
+          ],
+        },
+      ];
+
+      return (
+        <Provider
+          schema={schema}
+          resolver={createFetchMockResolver(getFakeFetch(fetchOutput))}
+          store={store}
+        >
+          {children}
+        </Provider>
+      );
+    };
+
+    const useRequestFn = jest.fn(useRequest);
+
+    const { result, waitForNextUpdate } = renderHook(() => {
+      return useRequestFn({ ...getRequestArgsNotCached() }, { includedResources: { comments: true } });
+    }, { wrapper });
+
+    expect(result.current[0]).toEqual(null);
+    expect(result.current[1].loading).toBe(true);
+    expect(result.current[1].requestPending).toBe(true);
+
+    await act(async () => {
+      await waitForNextUpdate();
+      expect(result.current[0]).toEqual([
+        {
+          id: 'article_2',
+          name: 'article_2',
+          comments: [
+            {
+              id: 'comment_1',
+              name: 'comment 1',
+              articleId: 'article_2',
+            },
+          ],
+        },
+      ]);
+      expect(result.current[1].loading).toBe(false);
+      expect(result.current[1].requestPending).toBe(false);
+      await waitNextUpdateShouldNotAppear(waitForNextUpdate, 500);
+    });
+
+    expect(useRequestFn).toBeCalledTimes(2);
   });
 });

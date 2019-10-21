@@ -5,6 +5,8 @@
     <br/>
   </h1>
     <br/>
+    :warning: alpha version, still under development
+    <br/>
     <br/>
     Make HTTP requests and keep your UI up to date.
     <br/>
@@ -17,7 +19,7 @@
     <div>✓ cached data</div>
     <div>✓ internal memoization</div>
     <div>✓ resources relationship</div>
-    <div>✓ agonistic HTTP client</div>
+    <div>✓ agnostic HTTP client</div>
     <div>✓ TypeScript support</div>
   </div>
   <br/>

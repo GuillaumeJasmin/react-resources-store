@@ -7,7 +7,7 @@
   "scripts": {
     "build": "run-s clean test build:*",
     "build:main": "tsc -p tsconfig.json",
-    "build:main:link": "run-s build && rm -rf node_modules && npm install --only=prod",
+    "npm-symlink": "run-s build && rm -rf node_modules && npm install --only=prod",
     "test": "run-s test:*",
     "test:eslint": "npx eslint --ext .tsx --ext .ts src/",
     "test:jest": "npx jest --env=jsdom --verbose ",

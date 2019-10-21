@@ -1,8 +1,6 @@
 <div align="center">
   <h1>
-    <br/>
     React Resources Store
-    <br/>
     <br/>
     <br/>
   </h1>
@@ -20,6 +18,7 @@
     <div>✓ internal memoization</div>
     <div>✓ resources relationship</div>
     <div>✓ agonistic HTTP client</div>
+    <div>✓ TypeScript support</div>
   </div>
   <br/>
   <br/>
@@ -36,11 +35,12 @@
 * [API](#api)
   * [useRequest()](#userequest)
   * [useLazyRequest()](#uselazyrequest)
-* [Fetch Policy](#fetch-policy)
 * [Resolvers](#resolvers)
   * [Axios](#axios)
   * [fetch](#fetch)
   * [Custom resolver](#build-your-resolver)
+* [Relationships](#relationships)
+* [Fetch Policy](#fetch-policy)
 * [Advanced usage](#advanced-usage)
   * [Custom store](#custom-store)
 
@@ -99,7 +99,7 @@ const App = (
 ## `useRequest()`
 
 
-useRequest is use to get data and keep your component up to date with data from store.
+useRequest is used to get data and keep your component up to date with data from store.
 
 `useLazyRequest(requestParams, options)`
 
@@ -111,7 +111,7 @@ useRequest is use to get data and keep your component up to date with data from 
 
 ## `useLazyRequest()`
 
-useLazyRequest is use to make delayed requests, like a POST request trigger by a callback. 
+useLazyRequest is used to make delayed requests, like a POST request trigger by a callback. 
 
 `useLazyRequest(requestParams, options)`
 
@@ -122,7 +122,7 @@ useLazyRequest is use to make delayed requests, like a POST request trigger by a
 
 ## Usage examples 
 
-The following example are use with axios resolver
+The following example used axios resolver
 
 ```js
 function Demo() {
@@ -166,31 +166,13 @@ function Demo() {
 }
 ```
 
-`requestKey` is use to update the list. It's only required when you want to add a new item into a specific list.
-If you only update attributes of items, cache will be updated automatically and UI still up to date
-
-# Fetch Policy
-
-Fetch policy are same than [Apollo fetch policy](https://www.apollographql.com/docs/react/api/react-apollo/#optionsfetchpolicy), expect that `no-cache` is not yet supported.
-
-* `cache-first` (default)
-
-* `cache-and-network`
-
-* `network-only`
-
-* `cache-only`
-
-Examples
-
-```js
-useRequest(args, { fetchPolicy: 'network-only' })
-```
+`requestKey` is used to update the list. It's only required when you want to add a new item into a specific list.
+If you only update attributes of item, cache will be updated automatically and UI still up to date
 
 # Resolvers
 ## Axios
 
-[Axios resolver](https://github.com/GuillaumeJasmin/react-resources-store/blob/master/src/resolvers/axios.ts)
+[Axios resolver](src/resolvers/axios.ts)
 
 ```js
 import axios from 'axios'
@@ -212,7 +194,7 @@ const App = (
 
 ## Fetch
 
-[Fetch resolver](https://github.com/GuillaumeJasmin/react-resources-store/blob/master/src/resolvers/fetch.ts)
+[Fetch resolver](src/resolvers/fetch.ts)
 
 ```js
 import { createFetchResolver } from 'react-resources-stores'
@@ -269,9 +251,46 @@ export function createYourResolver(axiosInstance) {
 }
 ```
 
-# Advanced usage
+# Relationships
 
-## Relationship
+Assume you have the following payload
+
+```js
+[
+  id: 'artcile_1',
+  title: 'Article 1',
+  authorId: 'user_1',
+  author: {
+    id: 'user_1',
+    name: 'User 1',
+  },
+  comments: [
+    {
+      id: 'comment_1',
+      content: 'Comment 1',
+      articleId: 'artcile_1',
+      commenterId: 'user_2',
+      commenter: {
+        id: 'user_2',
+        name: 'User 2',
+      },
+    },
+    {
+      id: 'comment_2',
+      content: 'Comment 2',
+      articleId: 'artcile_2',
+      commenterId: 'user_3',
+      commenter: {
+        id: 'user_3',
+        name: 'User 3',
+      },
+    }
+  ]
+]
+```
+
+Your data must be normalized.  
+Under the hood, `react-resource-store` use [normalizr](https://github.com/paularmstrong/normalizr) based on your schema:
 
 ```js
 const schema = {
@@ -281,68 +300,113 @@ const schema = {
       relationType: 'hasMany',
       foreignKey: 'articleId'
     },
+    author: {
+      resourceType: 'users',
+      relationType: 'hasOne',
+      foreignKey: 'authorId',
+    }
   },
   comments: {
     article: {
       resourceType: 'articles',
       relationType: 'hasOne',
-      foreignKey: 'articleId'
-    }
+      foreignKey: 'articleId',
+    },
+    commenter: {
+      resourceType: 'users',
+      relationType: 'hasOne',
+      foreignKey: 'commenterId',
+    },
+  },
+  users: {
+    comments: {
+      resourceType: 'comments',
+      relationType: 'hasMany',
+      foreignKey: 'commenterId'
+    },
+    articles: {
+      resourceType: 'articles',
+      relationType: 'hasMany',
+      foreignKey: 'authorId'
+    },
   }
 }
 ```
+
+You can now specified `options.includedResources` to retrieve author and comments data into each articles
+
+```js
+const [articles] = useRequest({
+  url: 'articles',
+  method: 'GET',
+}, {
+  includedResources: {
+    author: true,
+    comments: true
+  }
+})
+```
+
+If you want multiple levels of data, for example, you want include the commenter of each comment:
+
+```js
+const [articles] = useRequest({
+  url: 'articles',
+  method: 'GET',
+}, {
+  includedResources: {
+    author: true,
+    comments: {
+      commenter: true
+    }
+  }
+})
+```
+
+# Fetch Policy
+
+Fetch policy are same than [Apollo fetch policy](https://www.apollographql.com/docs/react/api/react-apollo/#optionsfetchpolicy), expect that `no-cache` is not yet supported.
+
+* `cache-first` (default)
+
+* `cache-and-network`
+
+* `network-only`
+
+* `cache-only`
+
+Examples
+
+```js
+useRequest(args, { fetchPolicy: 'network-only' })
+```
+
+# Advanced usage
 
 ## Custom store
 
-`store-config.js`
+`React Resources Store` use redux under the hood to store data, but it's transparent for you. You don't have to setup store, dispatch action, etc.  
+Redux was choose for one primary reason: debug tools. So if you want to customize store and for example add redux dev tools, you can use this:
 
 ```js
-import axios from 'axios'
 import { createStore, combineReducers } from 'redux'
-import { Provider, createReducers, createAxiosResolver, useRequest, useLazyRequest } from 'react-resources-store'
+import { Provider, createReducers } from 'react-resources-store'
 
-const schema = {
-  articles: {
-    comments: {
-      resourceType: 'comments',
-      relationType: 'hasMany',
-      foreignKey: 'articleId'
-    },
-  },
-  comments: {
-    article: {
-      resourceType: 'articles',
-      relationType: 'hasOne',
-      foreignKey: 'articleId'
-    }
-  }
-}
-
-const reducers = createReducers(schema)
-
-const store = createStore(combineReducers(reducers))
-
-const axiosInstance = axios.create({
-  baseURL: 'http://website.com/api/',
-})
-
-const resolver = createAxiosResolver(axiosInstance)
-
-export const contextValue = {
-  schema,
-  resolver,
-  store,
-}
-```
-
-`App.jsx`
-
-```js
-import { contextValue } from './store-config'
+const schema = { ... }
+const reducers = combineReducers(createReducers(schema))
+const store = createStore(
+  reducers,
+  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__(),
+)
 
 const App = (
-  <Provider {...contextValue}>
+  <Provider
+    ...
+    store={store}
+  >
     {...}
   </Provider>
 )
 ```
+
+[See default store](src/context.tsx#L10)

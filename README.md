@@ -52,7 +52,7 @@ npm i react-resources-store
 
 # Quick start
 
-Quick start with default HTTP client `window.fetch`
+Quick start with `window.fetch` as HTTP client resolver 
 
 ```js
 import { Provider, useRequest, createFetchResolver } from 'react-resources-store'
@@ -67,7 +67,7 @@ function Articles() {
   })
 
   if (loading) {
-    return <Loader />
+    return <div>Loading...</div>
   }
 
   return (
@@ -121,9 +121,12 @@ useLazyRequest is use to make delayed requests, like a POST request trigger by a
   * `requestKey`
 
 ## Usage examples 
+
+The following example are use with axios resolver
+
 ```js
 function Demo() {
-  const [articles, { loading }] = useRequest({
+  const [articles, { loading, requestKey }] = useRequest({
     url: 'articles',
     method: 'GET',
     params: {
@@ -131,30 +134,40 @@ function Demo() {
     }
   })
 
-  // axios
-  const [createArticle, { requestIsPending }] = useLazyRequest((data) => ({
+  const [createArticle] = useLazyRequest((data) => ({
     url: 'articles',
-    method: 'GET',
+    method: 'POST',
     data
-  }))
+  }), {
+    requestKey
+  })
   
-  const onClick = useCallbask(() => {
+  const onClickAddArticle = useCallbask(() => {
     createArticle({
       title: '...',
       content: '...'
     })
-  }, [])
+  }, [createArticle])
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
 
   return (
     <div>
-      ...
-      {articles.map(article => (
-        <div>{article.title}</div>
-      ))}
+      <div>
+        {articles.map(article => (
+          <div>{article.title}</div>
+        ))}
+      <div>
+      <button onClick={onClickAddArticle}>Add article</button>
     </div>
   )
 }
 ```
+
+`requestKey` is use to update the list. It's only required when you want to add a new item into a specific list.
+If you only update attributes of items, cache will be updated automatically and UI still up to date
 
 # Fetch Policy
 
@@ -328,7 +341,7 @@ export const contextValue = {
 import { contextValue } from './store-config'
 
 const App = (
-  <Provider value={contextValue}>
+  <Provider {...contextValue}>
     {...}
   </Provider>
 )

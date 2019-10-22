@@ -15,6 +15,11 @@
     "clean": "rm -rf build"
   },
   "author": "Guillaume JASMIN",
+  "homepage": "https://github.com/guillaumejasmin/react-resources-store",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:guillaumejasmin/react-resources-store.git"
+  },
   "license": "MIT",
   "publishConfig": {
     "tag": "next"

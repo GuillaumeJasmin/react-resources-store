@@ -3,7 +3,14 @@
     React Resources Store
     <br/>
     <br/>
+    <br/>
   </h1>
+    <br/>
+    <a href="https://www.npmjs.com/package/react-resources-store">
+      <img src="https://img.shields.io/npm/v/react-resources-store.svg" alt="npm package" />
+    </a>
+    <br/>
+    <br/>
     <br/>
     :warning: alpha version, still under development
     <br/>
@@ -11,7 +18,7 @@
     Make HTTP requests and keep your UI up to date.
     <br/>
     <br/>
-    It's inspired by <a href="https://www.apollographql.com">Apollo</a> and <a href="https://github.com/jamesplease/redux-resource">Redux Resources</a>
+    Inspired by <a href="https://www.apollographql.com">Apollo</a> and <a href="https://github.com/jamesplease/redux-resource">Redux Resources</a>
   <br/>
   <br/>
   <div style="width: 200px; text-align: left">
@@ -22,6 +29,8 @@
     <div>✓ agnostic HTTP client</div>
     <div>✓ TypeScript support</div>
   </div>
+  <br/>
+  <br/>
   <br/>
   <br/>
   <br/>
@@ -37,7 +46,7 @@
 * [API](#api)
   * [useRequest()](#userequest)
   * [useLazyRequest()](#uselazyrequest)
-* [Resolvers](#resolvers)
+* [Resolver](#resolver)
   * [Axios](#axios)
   * [fetch](#fetch)
   * [Custom resolver](#build-your-resolver)
@@ -103,21 +112,21 @@ const App = (
 
 useRequest is used to get data and keep your component up to date with data from store.
 
-`useLazyRequest(requestParams, options)`
+`useLazyRequest(resolverParams, options)`
 
-* `requestParams` - object related to your resolver
+* `resolverParams` - object - resolver params. See [Resolver](#resolver)
 
 * `options`
   * `fetchPolicy` - see [Fetch Policy](#fetch-policy)
-  * `includedResources`
+  * `includedResources` see [Relationships](#relationships)
 
 ## `useLazyRequest()`
 
-useLazyRequest is used to make delayed requests, like a POST request trigger by a callback. 
+useLazyRequest is used to make delayed requests, like a POST or PATCH request. 
 
-`useLazyRequest(requestParams, options)`
+`useLazyRequest(resolverParams, options)`
 
-* `requestParams` - object related to your resolver
+* `resolverParams` - function - return resolver params
 
 * `options`
   * `requestKey`
@@ -136,10 +145,10 @@ function Demo() {
     }
   })
 
-  const [createArticle] = useLazyRequest((data) => ({
+  const [createArticle] = useLazyRequest((article) => ({
     url: 'articles',
     method: 'POST',
-    data
+    data: article
   }), {
     requestKey
   })
@@ -171,10 +180,15 @@ function Demo() {
 `requestKey` is used to update the list. It's only required when you want to add a new item into a specific list.
 If you only update attributes of item, cache will be updated automatically and UI still up to date
 
-# Resolvers
+# Resolver
+
+The resolver is an important part of react-resources-store, because it's your HTTP Client. Is responsible to make request and return data, then `react-resources-store` made the rest of job for you.
+
+You can use a predefined resolver or build yours. There is 2 provided resolvers: `axios` and `window.fetch`.
+
 ## Axios
 
-[Axios resolver](src/resolvers/axios.ts)
+[Axios resolver source](src/resolvers/axios.ts)
 
 ```js
 import axios from 'axios'
@@ -196,7 +210,7 @@ const App = (
 
 ## Fetch
 
-[Fetch resolver](src/resolvers/fetch.ts)
+[Fetch resolver source](src/resolvers/fetch.ts)
 
 ```js
 import { createFetchResolver } from 'react-resources-stores'
@@ -215,15 +229,29 @@ const App = (
 
 You can build your own resolver. 
 
+A resolver is a function that take arguments, and return specific data:
+- `url` - relative of absolute URL. Only use for cache
+- `method` - HTTP method (`GET`, `POST`, `PATCH`, ...). Use for cache and also check if request is a read or write action
+- `params` Query params - Only use for cache
+- `resourceType` - Name of your resource, like `articles`, `comments`, etc... 
+- `resourceId`
+- `request`
+
+Theses properties are essential to internal use of `react-resources-store`.  
+
+`url`, `method` and `params` are used to track requests and cached them. `resourceType` and `resourceId` are used to store data into the right place and update / delete the correct item.
+
+
 ```js
-export function createYourResolver(axiosInstance) {
+export function createYourResolver(resolverParams) {
+  
   return function yourResolver(args) {
 
     const url = '...';
     const method = '...';
+    const params = '...';
     const resourceType = '...';
     const resourceId = '...';
-    const params = '...';
 
     const request = (succeeded, failed) => {
       // trigger request here
@@ -291,8 +319,7 @@ Assume you have the following payload
 ]
 ```
 
-Your data must be normalized.  
-Under the hood, `react-resource-store` use [normalizr](https://github.com/paularmstrong/normalizr) based on your schema:
+Under the hood, your data will be normalized by [normalizr](https://github.com/paularmstrong/normalizr) based on your schema:
 
 ```js
 const schema = {

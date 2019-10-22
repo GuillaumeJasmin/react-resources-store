@@ -189,7 +189,7 @@ export function createReducers(schema: Schema) {
               ...state.requests,
               [requestKey]: {
                 ...state.requests[requestKey],
-                ids: [...state.requests[requestKey].ids, action.ids],
+                ids: [...state.requests[requestKey].ids, ...action.ids],
               },
             },
           };

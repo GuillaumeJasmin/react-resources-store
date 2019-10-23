@@ -28,10 +28,8 @@ type UseRequestOutput<Data = any> = [
 export function useRequest<Data = any>(requestArgs: any, options: Options = {}): UseRequestOutput<Data> {
   const { resolver, store, schema } = useContext(Context);
   const isMountedRef = useRef(false);
-  const isMounted = isMountedRef.current;
   const refSelector = useRef(null);
   const refData = useRef<any>(null);
-  const requestPendingRef = useRef(false);
   const [, forceUpdate] = useState(Date.now());
 
   const metadata = {
@@ -63,6 +61,7 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
     || fetchPolicy === 'network-only'
   );
 
+
   const requestHash = getRequestHash(url, method, params);
   const request = getRequest(store.getState(), resourceType, requestHash);
   const requestExist = !!request;
@@ -72,10 +71,12 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
   const forceNetwork = fetchPolicy === 'cache-and-network' || fetchPolicy === 'network-only';
   const enableNetwork = allowNetwork && (forceNetwork || !requestExist);
 
-  metadata.requestPending = (!isMounted && enableNetwork) || requestPendingRef.current;
+  const requestPendingRef = useRef(enableNetwork);
+
+  metadata.requestPending = requestPendingRef.current;
   metadata.requestKey = requestHash;
 
-  if (!isMounted && !enableCache) {
+  if (!enableCache && metadata.requestPending) {
     metadata.loading = true;
   }
 
@@ -103,7 +104,6 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
 
     return triggerRequest(
       (succeededData) => {
-        // setRequestIsPending(false);
         requestPendingRef.current = false;
         store.dispatch({
           ...action,
@@ -112,7 +112,6 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
         });
       },
       (/* failedData */) => {
-        // setRequestIsPending(false);
         requestPendingRef.current = false;
         store.dispatch({
           ...action,

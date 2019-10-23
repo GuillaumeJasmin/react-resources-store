@@ -130,10 +130,11 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
 
   useMount(() => {
     isMountedRef.current = true;
+    let unsubscribe: any;
 
     const isGet = method.toUpperCase() === 'GET';
     if (isGet) {
-      store.subscribe(() => {
+      unsubscribe = store.subscribe(() => {
         const nextData = getRequestResources(refSelector, schema, store.getState(), resourceType, requestHash, options.includedResources);
         if (refData.current !== nextData) {
           forceUpdate(Date.now());
@@ -150,6 +151,12 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
     ) {
       fetch();
     }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   });
 
   return [refData.current, metadata];

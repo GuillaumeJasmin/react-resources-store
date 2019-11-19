@@ -12,7 +12,10 @@
     "test:eslint": "npx eslint --ext .tsx --ext .ts src/",
     "test:jest": "npx jest --env=jsdom --verbose ",
     "test:jest:watch": "npx jest --watch --env=jsdom",
-    "clean": "rm -rf build"
+    "clean": "rm -rf build",
+    "release-patch": "npm version patch",
+    "release-minor": "npm version minor",
+    "release-major": "npm version major"
   },
   "author": "Guillaume JASMIN",
   "homepage": "https://github.com/guillaumejasmin/react-resources-store",

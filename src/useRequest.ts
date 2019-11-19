@@ -47,6 +47,7 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
     params,
     request: triggerRequest,
     resourceType,
+    requestKey,
   } = resolver(requestArgs);
 
   const allowCache = (
@@ -62,7 +63,12 @@ export function useRequest<Data = any>(requestArgs: any, options: Options = {}):
   );
 
 
-  const requestHash = getRequestHash(url, method, params);
+  const requestHash = requestKey || (url && getRequestHash(url, method, params)) || '';
+
+  if (!requestHash) {
+    throw new Error('react-resource-store: requestKey is required from resolver');
+  }
+
   const request = getRequest(store.getState(), resourceType, requestHash);
   const requestExist = !!request;
   const requestIsCached = allowCache && !!request;

@@ -51,11 +51,12 @@ export type SucceededFn = (args: SucceededArgs) => void
 export type FailedFn = (args: FailedArgs) => void
 
 export type Resolver = (...args: any) => {
-  url: string,
+  url?: string, // TODO: remove in future
   method: string,
   resourceType: string,
   resourceId: string | null,
-  params: object,
+  params?: object, // TODO: remove in future
+  requestKey?: string // TODO: required in future
   request: (
     succeeded: SucceededFn,
     failed: FailedFn

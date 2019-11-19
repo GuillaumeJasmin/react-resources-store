@@ -48,9 +48,12 @@ export function useLazyRequest<Params = void, Data = void>(
         request: resquestTrigger,
         params,
         resourceType,
+        requestKey = (url ? getRequestHash(url, method, params) : ''),
       } = resolver(argsRequestHandled);
 
-      const requestKey = getRequestHash(url, method, params);
+      if (!requestKey) {
+        throw new Error('react-resource-store: requestKey is required from resolver');
+      }
 
       // @ts-ignore
       const type = methodsToType[method.toUpperCase()];

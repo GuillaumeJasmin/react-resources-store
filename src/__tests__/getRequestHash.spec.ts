@@ -1,4 +1,3 @@
-import '../testUtils';
 import { getRequestHash } from '../getRequestHash';
 
 describe('getRequestHash', () => {

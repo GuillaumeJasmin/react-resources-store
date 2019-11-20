@@ -1,4 +1,4 @@
-export { Provider } from './context';
+export { Provider, Context } from './context';
 export { useRequest } from './useRequest';
 export { useLazyRequest } from './useLazyRequest';
 export { createReducers } from './createReducers';
